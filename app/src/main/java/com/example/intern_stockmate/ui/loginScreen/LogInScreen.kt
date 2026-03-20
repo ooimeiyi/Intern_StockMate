@@ -31,8 +31,9 @@ import androidx.navigation.NavController
 import com.example.intern_stockmate.viewModel.LoginViewModel
 
 @Composable
-fun LogInScreen(navController: NavController,
-                loginViewModel: LoginViewModel
+fun LogInScreen(
+    loginViewModel: LoginViewModel,
+    onLoginSuccess: () -> Unit
 ) {
     val textFieldColors = OutlinedTextFieldDefaults.colors(
         focusedTextColor = Color.Black,
@@ -154,9 +155,7 @@ fun LogInScreen(navController: NavController,
                         onClick = {
                             if (loginViewModel.attemptLogin()) {
                                 // NAVIGATE first
-                                navController.navigate("dashboard") {
-                                    popUpTo("login") { inclusive = true }
-                                }
+                                onLoginSuccess()
 
                                 // Clear fields safely
                                 loginViewModel.clearFields()

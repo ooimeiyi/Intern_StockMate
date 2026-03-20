@@ -12,16 +12,28 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
 import com.example.intern_stockmate.model.HamburgerScreen
 import com.example.intern_stockmate.ui.contact.ContactScreen
+import com.example.intern_stockmate.ui.creditor.CreditorInfoScreenContainer
+import com.example.intern_stockmate.ui.debtor.DebtorInfoScreenContainer
+import com.example.intern_stockmate.ui.member.MemberInfoScreenContainer
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreenWithMenu() {
-
-    val navController = rememberNavController() // internal NavController
+fun MainScreenWithMenu(
+    onLogout: () -> Unit
+) {
+    val navController = rememberNavController()
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+
+    fun navigateToScreen(screen: HamburgerScreen) {
+        navController.navigate(screen.route) {
+            popUpTo(HamburgerScreen.Dashboard.route) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -30,18 +42,21 @@ fun MainScreenWithMenu() {
         drawerState = drawerState,
         drawerContent = {
             MenuScreen(
-                navController = navController,
                 currentRoute = currentRoute,
                 onItemClick = { screen ->
                     scope.launch {
                         drawerState.close()
-                        navController.navigate(screen.route) {
-                            popUpTo(HamburgerScreen.Dashboard.route) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
+                        navigateToScreen(screen)
                     }
-                })
+                },
+                onLogout = {
+                    scope.launch {
+                        drawerState.close()
+                        navController.popBackStack(HamburgerScreen.Dashboard.route, false)
+                        onLogout()
+                    }
+                }
+            )
         }
     ) {
         Scaffold(
@@ -76,20 +91,32 @@ fun MainScreenWithMenu() {
                     startDestination = HamburgerScreen.Dashboard.route
                 ) {
                     composable(HamburgerScreen.Dashboard.route) {
-                        DashboardScreen(navController = navController)
+                        DashboardScreen(onNavigate = ::navigateToScreen)
                     }
 
-                    composable(HamburgerScreen.StockList.route) { /* StockList Screen */ }
-                    composable(HamburgerScreen.StockAdjustment.route) { /* StockAdjustment Screen */ }
-                    composable(HamburgerScreen.SalesOverview.route) { /* SalesOverview Screen */ }
-                    composable(HamburgerScreen.HourlySales.route) { /* HourlySales Screen */ }
-                    composable(HamburgerScreen.DailySales.route) { /* DailySales Screen */ }
-                    composable(HamburgerScreen.MonthlySales.route) { /* MonthlySales Screen */ }
-                    composable(HamburgerScreen.Rank.route) { /* SalesRank Screen */ }
-                    composable(HamburgerScreen.Members.route) { /* Members Screen */ }
-                    composable(HamburgerScreen.Debtor.route) { /* Debtor Screen */ }
-                    composable(HamburgerScreen.Creditor.route) { /* Creditor Screen */ }
-                    composable(HamburgerScreen.Config.route) { /* Config Screen */ }
+                    composable(HamburgerScreen.StockList.route) { }
+                    composable(HamburgerScreen.StockAdjustment.route) { }
+                    composable(HamburgerScreen.StockOrder.route) { }
+                    composable(HamburgerScreen.SalesOverview.route) { }
+                    composable(HamburgerScreen.HourlySales.route) { }
+                    composable(HamburgerScreen.DailySales.route) { }
+                    composable(HamburgerScreen.MonthlySales.route) { }
+                    composable(HamburgerScreen.Rank.route) { }
+                    composable(HamburgerScreen.Items.route) { }
+
+                    composable(HamburgerScreen.Members.route) {
+                        MemberInfoScreenContainer()
+                    }
+
+                    composable(HamburgerScreen.Debtor.route) {
+                        DebtorInfoScreenContainer()
+                    }
+
+                    composable(HamburgerScreen.Creditor.route) {
+                        CreditorInfoScreenContainer()
+                    }
+
+                    composable(HamburgerScreen.Config.route) { }
 
                     composable(HamburgerScreen.Contact.route) {
                         ContactScreen()

@@ -32,9 +32,9 @@ import com.example.intern_stockmate.model.HamburgerScreen
 
 @Composable
 fun MenuScreen(
-    navController: NavHostController,
     currentRoute: String?,
-    onItemClick: (HamburgerScreen) -> Unit
+    onItemClick: (HamburgerScreen) -> Unit,
+    onLogout: () -> Unit
 ) {
     var isSalesReportExpanded by remember { mutableStateOf(false) }
     var isCrmAccountExpanded by remember { mutableStateOf(false) }
@@ -170,11 +170,7 @@ fun MenuScreen(
                     icon = { Icon(Icons.Outlined.ExitToApp, contentDescription = "Logout", tint = Color.Red) },
                     label = { Text("Logout", fontWeight = FontWeight.Bold, color = Color.Red) },
                     selected = false,
-                    onClick = {
-                        navController.navigate("login") {
-                            popUpTo("dashboard") { inclusive = true }
-                        }
-                    },
+                    onClick = onLogout,
                     colors = NavigationDrawerItemDefaults.colors(
                         unselectedContainerColor = Color.Transparent,
                         unselectedIconColor = Color.Red,

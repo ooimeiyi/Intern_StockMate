@@ -24,7 +24,7 @@ import com.example.intern_stockmate.model.HamburgerScreen
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
-    navController: NavHostController,
+    onNavigate: (HamburgerScreen) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier
@@ -38,12 +38,12 @@ fun DashboardScreen(
             Row(Modifier.padding(horizontal = 8.dp)) {
                 Box(Modifier.weight(1f)) {
                     DashboardCard("Stock List", Icons.Default.Inventory) {
-                        navController.navigate(HamburgerScreen.StockList.route)
+                        onNavigate(HamburgerScreen.StockList)
                     }
                 }
                 Box(Modifier.weight(1f)) {
                     DashboardCard("Stock Adjustment", Icons.Default.SyncAlt) {
-                        navController.navigate(HamburgerScreen.StockAdjustment.route)
+                        onNavigate(HamburgerScreen.StockAdjustment)
 
                     }
                 }
@@ -52,7 +52,7 @@ fun DashboardScreen(
             Row(Modifier.padding(horizontal = 8.dp)) {
                 Box(Modifier.weight(1f)) {
                     DashboardCard("Sales Order", Icons.Default.ShoppingCart) {
-                        // TODO
+                        onNavigate(HamburgerScreen.StockOrder)
                     }
                 }
                 Spacer(Modifier.weight(1f))
@@ -65,12 +65,12 @@ fun DashboardScreen(
             Row(Modifier.padding(horizontal = 8.dp)) {
                 Box(Modifier.weight(1f)) {
                     DashboardCard("Sales Overview", Icons.Default.Schedule) {
-                        navController.navigate("salesOverview")
+                        onNavigate(HamburgerScreen.SalesOverview)
                     }
                 }
                 Box(Modifier.weight(1f)) {
                     DashboardCard("Hourly Sales", Icons.Default.CalendarToday) {
-                        navController.navigate("hourlySales")
+                        onNavigate(HamburgerScreen.HourlySales)
                     }
                 }
             }
@@ -78,12 +78,12 @@ fun DashboardScreen(
             Row(Modifier.padding(horizontal = 8.dp)) {
                 Box(Modifier.weight(1f)) {
                     DashboardCard("Daily Sales", Icons.Default.BarChart) {
-                        navController.navigate("dailySales")
+                        onNavigate(HamburgerScreen.DailySales)
                     }
                 }
                 Box(Modifier.weight(1f)) {
                     DashboardCard("Monthly Sales", Icons.Default.Star) {
-                        navController.navigate("monthlySales")
+                        onNavigate(HamburgerScreen.MonthlySales)
                     }
                 }
             }
@@ -91,7 +91,7 @@ fun DashboardScreen(
             Row(Modifier.padding(horizontal = 8.dp)) {
                 Box(Modifier.weight(1f)) {
                     DashboardCard("Sales Rank", Icons.Default.Star) {
-                        navController.navigate("rank")
+                        onNavigate(HamburgerScreen.Rank)
                     }
                 }
                 Spacer(Modifier.weight(1f))
@@ -105,12 +105,12 @@ fun DashboardScreen(
             Row(Modifier.padding(horizontal = 8.dp)) {
                 Box(Modifier.weight(1f)) {
                     DashboardCard("Member Info", Icons.Default.Schedule) {
-                        navController.navigate("members")
+                        onNavigate(HamburgerScreen.Members)
                     }
                 }
                 Box(Modifier.weight(1f)) {
                     DashboardCard("Debtor Info", Icons.Default.CalendarToday) {
-                        navController.navigate("debtor")
+                        onNavigate(HamburgerScreen.Debtor)
                     }
                 }
             }
@@ -118,7 +118,7 @@ fun DashboardScreen(
             Row(Modifier.padding(horizontal = 8.dp)) {
                 Box(Modifier.weight(1f)) {
                     DashboardCard("Creditor Info", Icons.Default.BarChart) {
-                        navController.navigate("creditor")
+                        onNavigate(HamburgerScreen.Creditor)
                     }
                 }
                 Spacer(Modifier.weight(1f))
@@ -132,12 +132,12 @@ fun DashboardScreen(
             Row(Modifier.padding(horizontal = 8.dp)) {
                 Box(Modifier.weight(1f)) {
                     DashboardCard("Configuration", Icons.Default.Schedule) {
-                        navController.navigate(HamburgerScreen.Config.route)
+                        onNavigate(HamburgerScreen.Config)
                     }
                 }
                 Box(Modifier.weight(1f)) {
                     DashboardCard("Contact Us", Icons.Default.CalendarToday) {
-                        navController.navigate(HamburgerScreen.Contact.route)
+                        onNavigate(HamburgerScreen.Contact)
 
                     }
                 }

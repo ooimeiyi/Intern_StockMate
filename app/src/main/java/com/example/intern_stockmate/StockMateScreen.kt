@@ -9,33 +9,38 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import com.example.intern_stockmate.ui.dashboard.DashboardScreen
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import com.example.intern_stockmate.ui.dashboard.MainScreenWithMenu
 import com.example.intern_stockmate.ui.loginScreen.LogInScreen
 import com.example.intern_stockmate.viewModel.LoginViewModel
 
 @Composable
 fun StockMateScreen() {
-    val navController = rememberNavController()
     val loginViewModel: LoginViewModel = viewModel()
+    var isLoggedIn by rememberSaveable { mutableStateOf(false) }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = Color.White
     ) {
-        NavHost(
-            navController = navController,
-            startDestination = "login"
-        ) {
-            // Login screen
-            composable("login") { LogInScreen(navController, loginViewModel) }
-
-            // All main screens in the drawer
-            composable("dashboard") {
-                MainScreenWithMenu()
-            }
-
+        if (isLoggedIn) {
+            MainScreenWithMenu(
+                onLogout = {
+                    isLoggedIn = false
+                    loginViewModel.clearFields()
+                }
+            )
+        } else {
+            LogInScreen(
+                loginViewModel = loginViewModel,
+                onLoginSuccess = {
+                    isLoggedIn = true
+                    loginViewModel.clearFields()
+                }
+            )
         }
     }
 }
