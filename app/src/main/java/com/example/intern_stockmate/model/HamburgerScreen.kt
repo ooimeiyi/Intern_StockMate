@@ -1,0 +1,44 @@
+package com.example.intern_stockmate.model
+
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BusinessCenter
+import androidx.compose.material.icons.filled.Checklist
+import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.Today
+import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.ui.graphics.vector.ImageVector
+
+sealed class HamburgerScreen(
+    val route: String,
+    val title: String,
+    val topBarTitle: String,  // This is for the Top App Bar
+    val icon: ImageVector) {
+
+    //sales overview
+    object Dashboard : HamburgerScreen("dashboard", "Dashboard","Dashboard", Icons.Default.Home)
+    object SalesOverview : HamburgerScreen("salesOverview", "Sales Overview","Sales Overview", Icons.Default.Home)
+
+    object StockList : HamburgerScreen("stock", "Stock List", "Stock List",Icons.Default.Checklist )
+    object HourlySales : HamburgerScreen("hourlySales", "Hourly Sales", "Hourly Sales",Icons.Default.Schedule )
+    object DailySales : HamburgerScreen("dailySales", "Daily Sales", "Daily Sales",Icons.Default.Today )
+    object MonthlySales : HamburgerScreen("monthlySales", "Monthly Sales", "Monthly Sales",Icons.Default.DateRange )
+    object Rank : HamburgerScreen("rank", "Sales Rank", "Top Daily Sales Item",Icons.Default.TrendingUp)
+    object Items : HamburgerScreen("items", "Item Info", "Item Information",Icons.Default.Inventory2)
+    object Members : HamburgerScreen("members", "Member Info", "Member Information", Icons.Default.Group)
+    object Debtor : HamburgerScreen("debtor", "Debtor Info", "Debtor Info",Icons.Default.BusinessCenter)
+    object Creditor : HamburgerScreen("creditor", "Creditor Info", "Creditor Info",Icons.Default.CreditCard)
+    object Config : HamburgerScreen("config", "Configuration", "Configuration",Icons.Default.Settings)
+    object Contact : HamburgerScreen("contact", "Contact Us", "Find Us",Icons.Default.Phone)
+
+    companion object {
+        val all = listOf(Dashboard, SalesOverview, StockList, HourlySales, DailySales, MonthlySales, Rank, Items, Members, Debtor, Creditor, Config, Contact)
+    }
+}
