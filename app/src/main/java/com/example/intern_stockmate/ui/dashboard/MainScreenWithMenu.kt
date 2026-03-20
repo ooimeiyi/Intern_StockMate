@@ -16,13 +16,14 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreenWithMenu(navController: NavHostController) {
+fun MainScreenWithMenu() {
 
-    val internalNavController = rememberNavController()
+    val navController = rememberNavController() // internal NavController
+
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
-    val navBackStackEntry by internalNavController.currentBackStackEntryAsState()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
     ModalNavigationDrawer(
@@ -34,7 +35,7 @@ fun MainScreenWithMenu(navController: NavHostController) {
                 onItemClick = { screen ->
                     scope.launch {
                         drawerState.close()
-                        internalNavController.navigate(screen.route) {
+                        navController.navigate(screen.route) {
                             popUpTo(HamburgerScreen.Dashboard.route) { saveState = true }
                             launchSingleTop = true
                             restoreState = true
@@ -71,12 +72,24 @@ fun MainScreenWithMenu(navController: NavHostController) {
         ) { paddingValues ->
             Box(modifier = Modifier.padding(paddingValues)) {
                 NavHost(
-                    navController = internalNavController,
+                    navController = navController,
                     startDestination = HamburgerScreen.Dashboard.route
                 ) {
                     composable(HamburgerScreen.Dashboard.route) {
-                        DashboardScreenContainer(navController = internalNavController)
+                        DashboardScreen(navController = navController)
                     }
+
+                    composable(HamburgerScreen.StockList.route) { /* StockList Screen */ }
+                    composable(HamburgerScreen.StockAdjustment.route) { /* StockAdjustment Screen */ }
+                    composable(HamburgerScreen.SalesOverview.route) { /* SalesOverview Screen */ }
+                    composable(HamburgerScreen.HourlySales.route) { /* HourlySales Screen */ }
+                    composable(HamburgerScreen.DailySales.route) { /* DailySales Screen */ }
+                    composable(HamburgerScreen.MonthlySales.route) { /* MonthlySales Screen */ }
+                    composable(HamburgerScreen.Rank.route) { /* SalesRank Screen */ }
+                    composable(HamburgerScreen.Members.route) { /* Members Screen */ }
+                    composable(HamburgerScreen.Debtor.route) { /* Debtor Screen */ }
+                    composable(HamburgerScreen.Creditor.route) { /* Creditor Screen */ }
+                    composable(HamburgerScreen.Config.route) { /* Config Screen */ }
 
                     composable(HamburgerScreen.Contact.route) {
                         ContactScreen()

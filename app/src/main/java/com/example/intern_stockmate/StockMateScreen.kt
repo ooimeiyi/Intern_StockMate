@@ -32,7 +32,9 @@ fun StockMateScreen() {
             composable("login") { LogInScreen(navController, loginViewModel) }
 
             // All main screens in the drawer
-            composable("dashboard") { MainScreenWithMenu(navController = navController) }
+            composable("dashboard") {
+                MainScreenWithMenu()
+            }
 
         }
     }
