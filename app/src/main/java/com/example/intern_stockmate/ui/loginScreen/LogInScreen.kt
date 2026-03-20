@@ -153,9 +153,12 @@ fun LogInScreen(navController: NavController,
                     Button(
                         onClick = {
                             if (loginViewModel.attemptLogin()) {
+                                // NAVIGATE first
                                 navController.navigate("dashboard") {
                                     popUpTo("login") { inclusive = true }
                                 }
+
+                                // Clear fields safely
                                 loginViewModel.clearFields()
                             }
                         },
