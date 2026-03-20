@@ -9,7 +9,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -46,15 +45,6 @@ fun LogInScreen(navController: NavController,
             .fillMaxSize()
             .background(Color(0xFFF8F9FA))
     ) {
-        // Settings Button
-        IconButton(
-            onClick = { navController.navigate("settings") },
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 40.dp, end = 16.dp)
-        ) {
-            Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.Gray)
-        }
 
         Column(
             modifier = Modifier

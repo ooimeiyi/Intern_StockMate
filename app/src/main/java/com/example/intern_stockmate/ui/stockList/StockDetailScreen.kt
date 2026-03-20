@@ -101,9 +101,9 @@ fun StockDetailScreen(
                     !item.itemPhoto.isNullOrBlank() -> {
                         val bitmap = base64ToBitmap(item.itemPhoto)
                         bitmap?.let { androidx.compose.ui.graphics.painter.BitmapPainter(it.asImageBitmap()) }
-                            ?: painterResource(id = R.drawable.stockova_logo)   // fallback if conversion fails
+                            ?: painterResource(id = R.drawable.stock_mate_logo)   // fallback if conversion fails
                     }
-                    else -> painterResource(id = R.drawable.stockova_logo)      // if no image, use this default logo
+                    else -> painterResource(id = R.drawable.stock_mate_logo)      // if no image, use this default logo
                 }
 
                 Image(

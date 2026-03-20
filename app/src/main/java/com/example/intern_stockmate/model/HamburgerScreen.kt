@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SyncAlt
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material.icons.filled.TrendingUp
@@ -26,7 +27,11 @@ sealed class HamburgerScreen(
     object Dashboard : HamburgerScreen("dashboard", "Dashboard","Dashboard", Icons.Default.Home)
     object SalesOverview : HamburgerScreen("salesOverview", "Sales Overview","Sales Overview", Icons.Default.Home)
 
-    object StockList : HamburgerScreen("stock", "Stock List", "Stock List",Icons.Default.Checklist )
+    object StockList : HamburgerScreen("stockList", "Stock List", "Stock List",Icons.Default.Checklist )
+
+    object StockAdjustment : HamburgerScreen("stockAdjustment", "Stock Adjustment", "Stock Adjustment", Icons.Default.SyncAlt)
+    object StockOrder : HamburgerScreen("stockOrder", "Stock Order", "Stock Order",Icons.Default.Checklist )
+
     object HourlySales : HamburgerScreen("hourlySales", "Hourly Sales", "Hourly Sales",Icons.Default.Schedule )
     object DailySales : HamburgerScreen("dailySales", "Daily Sales", "Daily Sales",Icons.Default.Today )
     object MonthlySales : HamburgerScreen("monthlySales", "Monthly Sales", "Monthly Sales",Icons.Default.DateRange )
@@ -39,6 +44,6 @@ sealed class HamburgerScreen(
     object Contact : HamburgerScreen("contact", "Contact Us", "Find Us",Icons.Default.Phone)
 
     companion object {
-        val all = listOf(Dashboard, SalesOverview, StockList, HourlySales, DailySales, MonthlySales, Rank, Items, Members, Debtor, Creditor, Config, Contact)
+        val all = listOf(Dashboard, SalesOverview, StockAdjustment, StockOrder, StockList, HourlySales, DailySales, MonthlySales, Rank, Items, Members, Debtor, Creditor, Config, Contact)
     }
 }

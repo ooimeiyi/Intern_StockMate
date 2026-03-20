@@ -79,10 +79,11 @@ fun StockAdjustmentScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { navController.navigate("settings") }) {
-                        Icon(Icons.Outlined.Settings, null, tint = Color.White)
-                    }
-                    IconButton(onClick = { navController.navigate("login") }) {
+                    IconButton(onClick = {
+                        navController.navigate("login") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }) {
                         Icon(Icons.Outlined.ExitToApp, null, tint = Color.White)
                     }
                 },

@@ -86,6 +86,18 @@ fun MenuScreen(
                     onItemClick = onItemClick
                 )
 
+                DrawerMenuItem(
+                    screen = HamburgerScreen.StockAdjustment,
+                    currentRoute = currentRoute,
+                    onItemClick = onItemClick
+                )
+
+                DrawerMenuItem(
+                    screen = HamburgerScreen.StockOrder,
+                    currentRoute = currentRoute,
+                    onItemClick = onItemClick
+                )
+
                 ExpandableDrawerMenuItem(
                     icon = { Icon(Icons.Default.BarChart, contentDescription = null, tint = Color.White) },
                     label = "Sales Report",
@@ -160,7 +172,7 @@ fun MenuScreen(
                     selected = false,
                     onClick = {
                         navController.navigate("login") {
-                            popUpTo("main") { inclusive = true }
+                            popUpTo("dashboard") { inclusive = true }
                         }
                     },
                     colors = NavigationDrawerItemDefaults.colors(

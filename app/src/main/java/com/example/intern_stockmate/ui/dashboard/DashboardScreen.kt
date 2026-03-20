@@ -53,7 +53,7 @@ fun DashboardScreen(
                 }
                 Box(Modifier.weight(1f)) {
                     DashboardCard("Stock Adjustment", Icons.Default.SyncAlt) {
-                        // TODO
+                        onNavigate("stockAdjustment")
                     }
                 }
             }
@@ -100,7 +100,7 @@ fun DashboardScreen(
             Row(Modifier.padding(horizontal = 8.dp)) {
                 Box(Modifier.weight(1f)) {
                     DashboardCard("Sales Rank", Icons.Default.Star) {
-                        // TODO
+                        onNavigate("rank")
                     }
                 }
                 Spacer(Modifier.weight(1f))
@@ -114,12 +114,12 @@ fun DashboardScreen(
             Row(Modifier.padding(horizontal = 8.dp)) {
                 Box(Modifier.weight(1f)) {
                     DashboardCard("Member Info", Icons.Default.Schedule) {
-                        onNavigate("memberInfo")
+                        onNavigate("members")
                     }
                 }
                 Box(Modifier.weight(1f)) {
                     DashboardCard("Debtor Info", Icons.Default.CalendarToday) {
-                        onNavigate("debtorInfo")
+                        onNavigate("debtor")
                     }
                 }
             }
@@ -127,7 +127,7 @@ fun DashboardScreen(
             Row(Modifier.padding(horizontal = 8.dp)) {
                 Box(Modifier.weight(1f)) {
                     DashboardCard("Creditor Info", Icons.Default.BarChart) {
-                        onNavigate("creditorInfo")
+                        onNavigate("creditor")
                     }
                 }
                 Spacer(Modifier.weight(1f))
@@ -141,12 +141,12 @@ fun DashboardScreen(
             Row(Modifier.padding(horizontal = 8.dp)) {
                 Box(Modifier.weight(1f)) {
                     DashboardCard("Configuration", Icons.Default.Schedule) {
-                        onNavigate("configuration")
+                        onNavigate("config")
                     }
                 }
                 Box(Modifier.weight(1f)) {
                     DashboardCard("Contact Us", Icons.Default.CalendarToday) {
-                        onNavigate("contactUs")
+                        onNavigate("contact")
                     }
                 }
             }

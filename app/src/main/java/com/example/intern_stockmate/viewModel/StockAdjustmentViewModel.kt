@@ -4,10 +4,12 @@ import android.app.Application
 import android.util.Log
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.intern_stockmate.data.local.StockAdjustmentDatabase
-import com.example.intern_stockmate.data.local.toEntity
-import com.example.intern_stockmate.data.local.toModel
+import com.example.intern_stockmate.local.StockAdjustmentDatabase
+import com.example.intern_stockmate.local.toEntity
+import com.example.intern_stockmate.local.toModel
 import com.example.intern_stockmate.model.StockAdjustmentDetail
 import com.example.intern_stockmate.model.StockAdjustmentHeader
 import com.google.firebase.firestore.FieldValue
@@ -353,5 +355,18 @@ class StockAdjustmentViewModel(
                 onResult(false, exception.message ?: "Unknown error")
             }
 
+    }
+}
+
+class StockAdjustmentViewModelFactory(
+    private val application: Application,
+    private val stockViewModel: StockViewModel
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(StockAdjustmentViewModel::class.java)) {
+            return StockAdjustmentViewModel(application, stockViewModel) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
 }

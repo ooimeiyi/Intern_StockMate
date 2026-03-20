@@ -48,9 +48,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun StockListScreen(
     navController: NavHostController,
-    settingsViewModel: SettingViewModel = viewModel()
+    stockViewModel: StockViewModel = viewModel()
 ) {
-    val apiUrl by settingsViewModel.getApiUrl
     val context = LocalContext.current
 
     // Scanner State
@@ -63,23 +62,15 @@ fun StockListScreen(
         if (granted) scanning = true else Toast.makeText(context, "Permission Denied", Toast.LENGTH_SHORT).show()
     }
 
-    // Initialize ViewModel (even if API is blank, so the search state works)
-    val stockViewModel: StockViewModel = viewModel(
-        key = apiUrl,
-        factory = StockViewModelFactory(StockRepository(apiUrl))
-    )
 
     val searchQuery by stockViewModel.searchQuery.collectAsState()
     var localQuery by remember { mutableStateOf(searchQuery) }
     val isInvalidSearch by stockViewModel.isInvalidSearch.collectAsState()
 
-    val stockItems by stockViewModel.filteredItems.collectAsState()
     val filteredItems by stockViewModel.filteredItems.collectAsState()
 
-    LaunchedEffect(apiUrl) {
-        if (apiUrl.isNotBlank()) {
-            stockViewModel.fetchStockItems()
-        }
+    LaunchedEffect(Unit) {
+        stockViewModel.fetchStockItems()
     }
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
@@ -109,9 +100,6 @@ fun StockListScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { navController.navigate("settings") }) {
-                        Icon(Icons.Outlined.Settings, "Settings", tint = Color.White)
-                    }
                     IconButton(onClick = {
                         navController.navigate("login") {
                             popUpTo(0) { inclusive = true }
@@ -195,57 +183,49 @@ fun StockListScreen(
 
             Spacer(modifier = Modifier.height(5.dp))
 
-            // CONTENT AREA
-            if (apiUrl.isBlank()) {
-                // If API is not set, show the message where the list would be
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Enter API URL in Setting Screen",
-                        color = Color.Gray,
-                        fontSize = 16.sp
-                    )
-                }
-            } else {
-                // If API is set, show the list
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState()),
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (searchQuery.isBlank()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Search Firebase stock by item code, description, or barcode.",
+                            color = Color.Gray,
+                            fontSize = 14.sp
+                        )
+                    }
+                } else if (isInvalidSearch) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No matching item found. Please try again.",
+                            color = Color.Red,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                } else {
+                    filteredItems.forEach { item ->
+                        StockItemRow(item = item) {
+                            navController.currentBackStackEntry
+                                ?.savedStateHandle
+                                ?.set("selectedItem", item)
+                            navController.navigate("stockDetail")
 
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    if (searchQuery.isNotBlank()) {  // Only show anything if user typed
-                        if (isInvalidSearch) {
-                            // Show no matching item message
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 32.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "No matching item found. Please Try Again",
-                                    color = Color.Red,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        } else {
-                            // Show filtered items
-                            filteredItems.forEach { item ->
-                                StockItemRow(item = item) {
-                                    navController.currentBackStackEntry
-                                        ?.savedStateHandle
-                                        ?.set("selectedItem", item)
-                                    navController.navigate("stockDetail")
-
-                                    localQuery = ""
-                                    stockViewModel.onSearchQueryChange("")
-                                }
-                            }
+                            localQuery = ""
+                            stockViewModel.onSearchQueryChange("")
                         }
                     }
                 }
