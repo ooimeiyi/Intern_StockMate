@@ -13,8 +13,12 @@ import androidx.navigation.compose.*
 import com.example.intern_stockmate.model.HamburgerScreen
 import com.example.intern_stockmate.ui.contact.ContactScreen
 import com.example.intern_stockmate.ui.creditor.CreditorInfoScreenContainer
+import com.example.intern_stockmate.ui.dailySales.DailySalesScreenContainer
 import com.example.intern_stockmate.ui.debtor.DebtorInfoScreenContainer
+import com.example.intern_stockmate.ui.hourlySales.HourlySalesScreenContainer
+import com.example.intern_stockmate.ui.itemInfo.ItemInfoScreenContainer
 import com.example.intern_stockmate.ui.member.MemberInfoScreenContainer
+import com.example.intern_stockmate.ui.monthlySales.MonthlySalesScreenContainer
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -95,14 +99,30 @@ fun MainScreenWithMenu(
                     }
 
                     composable(HamburgerScreen.StockList.route) { }
+
                     composable(HamburgerScreen.StockAdjustment.route) { }
+
                     composable(HamburgerScreen.StockOrder.route) { }
+
                     composable(HamburgerScreen.SalesOverview.route) { }
-                    composable(HamburgerScreen.HourlySales.route) { }
-                    composable(HamburgerScreen.DailySales.route) { }
-                    composable(HamburgerScreen.MonthlySales.route) { }
+
+                    composable(HamburgerScreen.HourlySales.route) {
+                        HourlySalesScreenContainer()
+                    }
+
+                    composable(HamburgerScreen.DailySales.route) {
+                        DailySalesScreenContainer()
+                    }
+
+                    composable(HamburgerScreen.MonthlySales.route) {
+                        MonthlySalesScreenContainer()
+                    }
+
                     composable(HamburgerScreen.Rank.route) { }
-                    composable(HamburgerScreen.Items.route) { }
+
+                    composable(HamburgerScreen.Items.route) {
+                        ItemInfoScreenContainer()
+                    }
 
                     composable(HamburgerScreen.Members.route) {
                         MemberInfoScreenContainer()
@@ -117,6 +137,7 @@ fun MainScreenWithMenu(
                     }
 
                     composable(HamburgerScreen.Config.route) { }
+
 
                     composable(HamburgerScreen.Contact.route) {
                         ContactScreen()
