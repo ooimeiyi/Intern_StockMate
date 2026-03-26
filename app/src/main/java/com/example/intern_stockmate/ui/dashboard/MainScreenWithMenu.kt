@@ -8,7 +8,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
 import com.example.intern_stockmate.model.HamburgerScreen
 import com.example.intern_stockmate.ui.contact.ContactScreen
@@ -19,6 +18,7 @@ import com.example.intern_stockmate.ui.hourlySales.HourlySalesScreenContainer
 import com.example.intern_stockmate.ui.itemInfo.ItemInfoScreenContainer
 import com.example.intern_stockmate.ui.member.MemberInfoScreenContainer
 import com.example.intern_stockmate.ui.monthlySales.MonthlySalesScreenContainer
+import com.example.intern_stockmate.ui.salesOverview.SalesOverviewScreenContainer
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -104,7 +104,10 @@ fun MainScreenWithMenu(
 
                     composable(HamburgerScreen.StockOrder.route) { }
 
-                    composable(HamburgerScreen.SalesOverview.route) { }
+                    composable(HamburgerScreen.SalesOverview.route) {
+                        SalesOverviewScreenContainer()
+                    }
+
 
                     composable(HamburgerScreen.HourlySales.route) {
                         HourlySalesScreenContainer()
