@@ -93,7 +93,7 @@ fun MenuScreen(
                 )
 
                 DrawerMenuItem(
-                    screen = HamburgerScreen.StockOrder,
+                    screen = HamburgerScreen.SalesOrder,
                     currentRoute = currentRoute,
                     onItemClick = onItemClick
                 )

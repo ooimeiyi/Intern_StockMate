@@ -52,7 +52,7 @@ fun DashboardScreen(
             Row(Modifier.padding(horizontal = 8.dp)) {
                 Box(Modifier.weight(1f)) {
                     DashboardCard("Sales Order", Icons.Default.ShoppingCart) {
-                        onNavigate(HamburgerScreen.StockOrder)
+                        onNavigate(HamburgerScreen.SalesOrder)
                     }
                 }
                 Spacer(Modifier.weight(1f))

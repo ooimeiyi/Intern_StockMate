@@ -127,11 +127,15 @@ class StockAdjustmentViewModel(
 
     fun saveCurrentAsKiv(): Boolean {
         val currentHeader = _selectedHeader.value ?: return false
+        val previousStatus = currentHeader.status
         val headerWithId = ensureStockTakeNo(currentHeader)
         val localHeader = buildHeaderWithCurrentItems(headerWithId, "KIV")
         upsertHeader(localHeader)
         persistHeadersToLocal()
         _selectedHeader.value = localHeader
+        if (previousStatus == "Submitted") {
+            markSubmittedDocumentAsKiv(localHeader.stockTakeNo)
+        }
         return true
     }
 
@@ -254,6 +258,23 @@ class StockAdjustmentViewModel(
         runCatching { FirebaseFirestore.getInstance() }
             .onFailure { Log.e("StockAdjustmentViewModel", "Firebase init failed", it) }
             .getOrNull()
+
+    private fun markSubmittedDocumentAsKiv(stockTakeNo: String) {
+        if (stockTakeNo.isBlank()) return
+        val firestore = getFirestoreOrNull() ?: return
+        firestore.collection("stockAdjustments")
+            .document(stockTakeNo)
+            .set(
+                mapOf(
+                    "status" to "KIV",
+                    "updatedAt" to FieldValue.serverTimestamp()
+                ),
+                SetOptions.merge()
+            )
+            .addOnFailureListener { exception ->
+                Log.e("StockAdjustmentViewModel", "Failed to switch submitted adjustment to KIV", exception)
+            }
+    }
 
     fun loadSavedAdjustmentsFromFirebase() {
         val firestore = getFirestoreOrNull() ?: return

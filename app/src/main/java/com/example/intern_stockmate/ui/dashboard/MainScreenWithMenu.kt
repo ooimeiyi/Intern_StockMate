@@ -21,12 +21,16 @@ import com.example.intern_stockmate.ui.hourlySales.HourlySalesScreenContainer
 import com.example.intern_stockmate.ui.itemInfo.ItemInfoScreenContainer
 import com.example.intern_stockmate.ui.member.MemberInfoScreenContainer
 import com.example.intern_stockmate.ui.monthlySales.MonthlySalesScreenContainer
+import com.example.intern_stockmate.ui.salesOrder.SalesOrderDetailsScreen
+import com.example.intern_stockmate.ui.salesOrder.SalesOrderScreen
 import com.example.intern_stockmate.ui.salesOverview.SalesOverviewScreenContainer
 import com.example.intern_stockmate.ui.salesRank.SalesRankScreenContainer
 import com.example.intern_stockmate.ui.stockLIst.StockDetailScreen
 import com.example.intern_stockmate.ui.stockAdjustment.AdjustmentItemsScreen
 import com.example.intern_stockmate.ui.stockAdjustment.StockAdjustmentScreen
 import com.example.intern_stockmate.ui.stockLIst.StockListScreenContainer
+import com.example.intern_stockmate.viewModel.SalesOrderViewModel
+import com.example.intern_stockmate.viewModel.SalesOrderViewModelFactory
 import com.example.intern_stockmate.viewModel.StockAdjustmentViewModel
 import com.example.intern_stockmate.viewModel.StockAdjustmentViewModelFactory
 import com.example.intern_stockmate.viewModel.StockViewModel
@@ -47,7 +51,15 @@ fun MainScreenWithMenu(
         )
     )
 
+    val salesOrderViewModel: SalesOrderViewModel = viewModel(
+        factory = SalesOrderViewModelFactory(
+            application = androidx.compose.ui.platform.LocalContext.current.applicationContext as android.app.Application,
+            stockViewModel = stockViewModel
+        )
+    )
+
     val isEditMode by stockAdjustmentViewModel.isEditMode.collectAsState()
+    val isSalesOrderEditMode by salesOrderViewModel.isEditMode.collectAsState()
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -86,12 +98,13 @@ fun MainScreenWithMenu(
     ) {
         Scaffold(
             topBar = {
-                val isDetailRoute = currentRoute in setOf("stockDetail", "adjustmentDetails")
+                val isDetailRoute = currentRoute in setOf("stockDetail", "adjustmentDetails", "salesOrderDetails")
                 TopAppBar(
                     title = {
                         val displayTitle = when (currentRoute) {
                             "stockDetail" -> "Stock Details"
                             "adjustmentDetails" -> if (isEditMode) "Edit Stock Take" else "New Stock Take"
+                            "salesOrderDetails" -> if (isSalesOrderEditMode) "Edit Sales Order" else "New Sales Order"
                             else -> HamburgerScreen.all.find { it.route == currentRoute }?.topBarTitle ?: "Sales Mate"
                         }
                         Text(displayTitle, color = Color.White, fontWeight = FontWeight.Bold)
@@ -164,7 +177,20 @@ fun MainScreenWithMenu(
                         )
                     }
 
-                    composable(HamburgerScreen.StockOrder.route) { }
+                    composable(HamburgerScreen.SalesOrder.route) {
+                        SalesOrderScreen(
+                            navController = navController,
+                            salesOrderViewModel = salesOrderViewModel
+                        )
+                    }
+
+                    composable("salesOrderDetails") {
+                        SalesOrderDetailsScreen(
+                            navController = navController,
+                            stockViewModel = stockViewModel,
+                            salesOrderViewModel = salesOrderViewModel
+                        )
+                    }
 
                     composable(HamburgerScreen.SalesOverview.route) {
                         SalesOverviewScreenContainer()

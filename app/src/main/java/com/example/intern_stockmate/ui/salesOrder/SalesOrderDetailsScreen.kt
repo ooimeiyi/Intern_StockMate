@@ -1,4 +1,4 @@
-package com.example.intern_stockmate.ui.stockAdjustment
+package com.example.intern_stockmate.ui.salesOrder
 
 import android.Manifest
 import android.widget.Toast
@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -33,7 +32,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
@@ -55,8 +53,6 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -81,7 +77,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.intern_stockmate.model.StockItem
 import com.example.intern_stockmate.scanner.QRCodeScanner
-import com.example.intern_stockmate.viewModel.StockAdjustmentViewModel
+import com.example.intern_stockmate.viewModel.SalesOrderViewModel
 import com.example.intern_stockmate.viewModel.StockViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -89,25 +85,24 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdjustmentItemsScreen(
+fun SalesOrderDetailsScreen(
     navController: NavHostController,
     stockViewModel: StockViewModel,
-    stockAdjustmentViewModel: StockAdjustmentViewModel
+    salesOrderViewModel: SalesOrderViewModel
 ) {
-    val physicalCounts = stockAdjustmentViewModel.physicalCounts
-    val diffCounts = stockAdjustmentViewModel.diffCounts
-    val selectedHeader by stockAdjustmentViewModel.selectedHeader.collectAsState()
+    val selectedHeader by salesOrderViewModel.selectedHeader.collectAsState()
 
     val searchQuery by stockViewModel.searchQuery.collectAsState()
     var localQuery by remember { mutableStateOf(searchQuery) }
     val isInvalidSearch by stockViewModel.isInvalidSearch.collectAsState()
 
-    val selectedLocation by stockViewModel.selectedLocation.collectAsState()
-    val locations by stockAdjustmentViewModel.locations.collectAsState(initial = emptyList())
+    val selectedLocation by salesOrderViewModel.selectedLocation.collectAsState()
+    val locations by salesOrderViewModel.locations.collectAsState(initial = emptyList())
+    val debtors by salesOrderViewModel.debtors.collectAsState(initial = emptyList())
     val filteredItems by stockViewModel.filteredItems.collectAsState()
 
-    var description by remember(selectedHeader) { mutableStateOf(selectedHeader?.description ?: "") }
-    var stockTakeNo by remember(selectedHeader) { mutableStateOf(selectedHeader?.stockTakeNo ?: "") }
+    var debtor by remember(selectedHeader) { mutableStateOf(selectedHeader?.debtor ?: "") }
+    var soNo by remember(selectedHeader) { mutableStateOf(selectedHeader?.soNo ?: "") }
     var date by remember(selectedHeader) { mutableStateOf(selectedHeader?.date ?: "") }
 
     var showDatePicker by remember { mutableStateOf(false) }
@@ -116,9 +111,15 @@ fun AdjustmentItemsScreen(
     val context = LocalContext.current
     var scanning by remember { mutableStateOf(false) }
 
-    LaunchedEffect(locations, selectedLocation, selectedHeader) {
-        if (selectedHeader == null && locations.isNotEmpty() && selectedLocation.isBlank()) {
-            stockAdjustmentViewModel.onLocationSelected(locations.first())
+    LaunchedEffect(locations, selectedLocation) {
+        if (locations.isNotEmpty() && selectedLocation.isBlank()) {
+            salesOrderViewModel.onLocationSelected(locations.first())
+        }
+    }
+
+    LaunchedEffect(debtors, selectedHeader) {
+        if (debtor.isBlank() && debtors.isNotEmpty() && selectedHeader == null) {
+            debtor = debtors.first()
         }
     }
 
@@ -163,15 +164,58 @@ fun AdjustmentItemsScreen(
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
-            AdjustmentBottomBar(
-                description = description,
-                stockTakeNo = stockTakeNo,
-                date = date,
-                selectedLocation = selectedLocation,
-                context = context,
-                navController = navController,
-                stockAdjustmentViewModel = stockAdjustmentViewModel
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Button(
+                    onClick = {
+                        salesOrderViewModel.updateHeaderFields(
+                            debtor = debtor,
+                            date = date,
+                            soNo = soNo,
+                            location = selectedLocation
+                        )
+                        salesOrderViewModel.saveCurrentAsKiv { success, message ->
+                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                            if (success) navController.popBackStack()
+                        }
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(45.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100))
+                ) {
+                    Text("Save KIV", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+
+                Button(
+                    onClick = {
+                        salesOrderViewModel.updateHeaderFields(
+                            debtor = debtor,
+                            date = date,
+                            soNo = soNo,
+                            location = selectedLocation
+                        )
+                        salesOrderViewModel.submitCurrentSalesOrder { success, message ->
+                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                            if (success) navController.popBackStack()
+                        }
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(45.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                ) {
+                    Icon(Icons.Default.Save, contentDescription = null, tint = Color.White)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Submit", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            }
         },
         containerColor = Color(0xFFF8F8F8)
     ) { padding ->
@@ -190,7 +234,7 @@ fun AdjustmentItemsScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            "Adjustment Details",
+                            "Sales Order Details",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color.Black
@@ -200,20 +244,22 @@ fun AdjustmentItemsScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            AdjustmentInputField(
-                                label = "Description",
-                                value = description,
-                                onValueChange = { description = it },
-                                placeholder = "Enter description",
-                                modifier = Modifier.weight(1.2f)
-                            )
+                            Box(modifier = Modifier.weight(1.2f)) {
+                                SalesOrderDropdown(
+                                    label = "Debtor",
+                                    selected = debtor,
+                                    options = debtors,
+                                    onSelect = { debtor = it }
+                                )
+                            }
                             Box(modifier = Modifier.weight(0.8f)) {
-                                AdjustmentInputField(
+                                SalesOrderInputField(
                                     label = "Date",
                                     value = date,
                                     onValueChange = {},
                                     placeholder = "DD-MM-YYYY",
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth(),
+                                    readOnly = true
                                 )
                                 Box(
                                     modifier = Modifier
@@ -226,20 +272,20 @@ fun AdjustmentItemsScreen(
                         }
                         Spacer(modifier = Modifier.height(12.dp))
                         Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
-                            AdjustmentInputField(
-                                label = "Stock Take No",
-                                value = stockTakeNo,
+                            SalesOrderInputField(
+                                label = "SO",
+                                value = soNo,
                                 onValueChange = {},
                                 placeholder = "Auto-generated",
                                 modifier = Modifier.weight(1.2f),
                                 readOnly = true
                             )
                             Box(modifier = Modifier.weight(0.8f)) {
-                                DropdownLocation(
+                                SalesOrderDropdown(
                                     label = "Location",
                                     selected = selectedLocation,
                                     options = locations,
-                                    onSelect = { stockViewModel.onLocationSelected(it) }
+                                    onSelect = { salesOrderViewModel.onLocationSelected(it) }
                                 )
                             }
                         }
@@ -313,8 +359,8 @@ fun AdjustmentItemsScreen(
                 val itemsToShow = if (isSearching) {
                     filteredItems
                 } else {
-                    val adjustedKeys = physicalCounts.keys
-                    stockViewModel.allItems.value.filter { adjustedKeys.contains(it.itemCode) }
+                    val selectedItemCodes = salesOrderViewModel.selectedItems.keys
+                    stockViewModel.allItems.value.filter { selectedItemCodes.contains(it.itemCode) }
                 }
 
                 if (!isSearching && itemsToShow.isEmpty()) {
@@ -326,7 +372,7 @@ fun AdjustmentItemsScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "Search item to add stock adjustment",
+                                text = "Search item to add sales order lines",
                                 color = Color.Gray
                             )
                         }
@@ -334,8 +380,23 @@ fun AdjustmentItemsScreen(
                 }
 
                 items(itemsToShow) { item ->
-                    StockItemRowLogic(item, selectedLocation, physicalCounts, diffCounts)
+                    SalesOrderItemRow(
+                        item = item,
+                        selectedLocation = selectedLocation,
+                        salesOrderViewModel = salesOrderViewModel
+                    )
                 }
+            }
+
+            item {
+                val added = salesOrderViewModel.selectedItems.size
+                Text(
+                    text = "Added items: $added",
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.End,
+                    color = Color.DarkGray,
+                    fontSize = 12.sp
+                )
             }
         }
     }
@@ -343,143 +404,37 @@ fun AdjustmentItemsScreen(
     if (scanning) {
         QRCodeScanner(
             scanning = scanning,
-            onResult = {
-                localQuery = it
-                stockViewModel.onSearchQueryChange(it)
-                scanning = false
-            },
+            onResult = { stockViewModel.onSearchQueryChange(it); scanning = false },
             onScanFinished = { scanning = false }
         )
     }
 }
 
 @Composable
-fun AdjustmentBottomBar(
-    description: String,
-    stockTakeNo: String,
-    date: String,
-    selectedLocation: String,
-    context: android.content.Context,
-    navController: NavHostController,
-    stockAdjustmentViewModel: StockAdjustmentViewModel
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.White)
-            .padding(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Button(
-            onClick = {
-                if (description.isBlank() || stockTakeNo.isBlank() || date.isBlank() || selectedLocation.isBlank()) {
-                    Toast.makeText(context, "Please fill all header fields", Toast.LENGTH_SHORT).show()
-                    return@Button
-                }
-
-                stockAdjustmentViewModel.updateSelectedHeaderFields(
-                    description,
-                    date,
-                    stockTakeNo,
-                    selectedLocation
-                )
-
-                val success = stockAdjustmentViewModel.saveCurrentAsKiv()
-
-                if (success) {
-                    Toast.makeText(context, "Saved to KIV locally", Toast.LENGTH_SHORT).show()
-                }
-
-                navController.previousBackStackEntry
-                    ?.savedStateHandle
-                    ?.set("selectedTab", 2)
-
-                navController.popBackStack()
-            },
-            modifier = Modifier
-                .weight(1f)
-                .height(50.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100))
-        ) {
-            Icon(Icons.Default.Save, null, tint = Color.White, modifier = Modifier.size(18.dp))
-            Spacer(modifier = Modifier.width(4.dp))
-            Text("Save KIV", color = Color.White, fontSize = 14.sp)
-        }
-
-        Button(
-            onClick = {
-                if (description.isBlank() || stockTakeNo.isBlank() || date.isBlank() || selectedLocation.isBlank()) {
-                    Toast.makeText(context, "Please fill all header fields", Toast.LENGTH_SHORT).show()
-                    return@Button
-                }
-
-                stockAdjustmentViewModel.updateSelectedHeaderFields(
-                    description,
-                    date,
-                    stockTakeNo,
-                    selectedLocation
-                )
-
-                stockAdjustmentViewModel.submitCurrentAdjustment { success, message ->
-                    Toast.makeText(
-                        context,
-                        if (success) "Adjustment submitted" else "Submit failed: $message",
-                        Toast.LENGTH_SHORT
-                    ).show()
-
-                    if (success) {
-                        navController.previousBackStackEntry
-                            ?.savedStateHandle
-                            ?.set("selectedTab", 2)
-
-                        navController.popBackStack()
-                    }
-                }
-            },
-            modifier = Modifier
-                .weight(1.6f)
-                .height(50.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-        ) {
-            Text("Submit Adjustment", color = Color.White, fontSize = 14.sp)
-        }
-    }
-}
-
-@Composable
-fun StockItemRowLogic(
-    stockItem: StockItem,
-    selectedLocation: String,
-    physicalCounts: MutableMap<String, String>,
-    diffCounts: MutableMap<String, Int>
-) {
-    val key = stockItem.itemCode
-    StockItemFilterRow(
-        item = stockItem,
-        selectedLocation = selectedLocation,
-        physicalValue = physicalCounts[key] ?: "",
-        diffValue = diffCounts[key] ?: 0,
-        onPhysicalChange = { newValue ->
-            if (newValue.all { it.isDigit() } || newValue.isEmpty()) {
-                physicalCounts[key] = newValue
-                val onHand = stockItem.locationList.find { it.location == selectedLocation }?.qty ?: 0
-                diffCounts[key] = (newValue.toIntOrNull() ?: 0) - onHand
-            }
-        }
-    )
-}
-
-@Composable
-fun StockItemFilterRow(
+private fun SalesOrderItemRow(
     item: StockItem,
     selectedLocation: String,
-    physicalValue: String,
-    diffValue: Int,
-    onPhysicalChange: (String) -> Unit
+    salesOrderViewModel: SalesOrderViewModel
 ) {
-    val onHandQty = item.locationList.find { it.location == selectedLocation }?.qty ?: 0
+    var selectedUom by remember { mutableStateOf(item.uomList.firstOrNull()?.uom ?: item.uom) }
+    var qtyInput by remember { mutableStateOf("") }
+    var unitPriceInput by remember { mutableStateOf("%.2f".format(item.uomList.firstOrNull()?.price1 ?: item.price)) }
+
+    LaunchedEffect(selectedLocation, item.itemCode) {
+        val existing = salesOrderViewModel.selectedItems[item.itemCode]
+        if (existing != null) {
+            selectedUom = existing.uom
+            qtyInput = existing.qty
+            unitPriceInput = "%.2f".format(existing.unitPrice)
+        } else {
+            selectedUom = item.uomList.firstOrNull()?.uom ?: item.uom
+            qtyInput = ""
+            unitPriceInput = "%.2f".format(item.uomList.firstOrNull()?.price1 ?: item.price)
+        }
+    }
+
+    val subtotalValue = (qtyInput.toDoubleOrNull() ?: 0.0) * (unitPriceInput.toDoubleOrNull() ?: 0.0)
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -488,76 +443,211 @@ fun StockItemFilterRow(
         border = BorderStroke(0.5.dp, Color.LightGray)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(item.itemCode, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.Black)
-                    Text(
-                        item.description,
-                        fontSize = 14.sp,
-                        color = Color.Gray,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        item.desc2 ?: "",
-                        fontSize = 14.sp,
-                        color = Color.Gray,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    Text(item.description, fontSize = 14.sp, color = Color.Gray, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(item.desc2 ?: "", fontSize = 14.sp, color = Color.Gray, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                Text(
-                    selectedLocation,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Red
-                )
+                Text(selectedLocation, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Red)
             }
             Spacer(Modifier.height(12.dp))
 
-            val scrollState = rememberScrollState()
+            val pricingScrollState = rememberScrollState()
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .horizontalScroll(scrollState)
+                    .horizontalScroll(pricingScrollState)
                     .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                QtyDisplayBox(
-                    label = "OnHand Qty",
-                    value = onHandQty.toString(),
-                    modifier = Modifier.width(100.dp),
-                    color = Color.Black
+                SalesOrderDropdownUom(
+                    label = "UOM",
+                    selected = selectedUom,
+                    options = item.uomList.map { it.uom },
+                    onSelect = { newUom ->
+                        selectedUom = newUom
+                        val uomInfo = item.uomList.find { it.uom == newUom }
+                        val newPrice = uomInfo?.price1 ?: item.price
+                        unitPriceInput = "%.2f".format(newPrice)
+                        salesOrderViewModel.updateSelectedItem(
+                            itemCode = item.itemCode,
+                            qty = qtyInput,
+                            uom = selectedUom,
+                            unitPrice = unitPriceInput.toDoubleOrNull() ?: 0.0
+                        )
+                    }
                 )
-
-                EditableQtyBox(
-                    label = "Physical Qty",
-                    value = physicalValue,
+                SalesOrderEditableBox(
+                    label = "Quantity",
+                    value = qtyInput,
                     onValueChange = { input ->
-                        if (input.matches(Regex("^\\d*$"))) {
-                            onPhysicalChange(input)
+                        if (input.matches(Regex("^\\d*\\.?\\d*$"))) {
+                            qtyInput = input
+                            salesOrderViewModel.updateSelectedItem(
+                                itemCode = item.itemCode,
+                                qty = qtyInput,
+                                uom = selectedUom,
+                                unitPrice = unitPriceInput.toDoubleOrNull() ?: 0.0
+                            )
                         }
                     },
-                    isNumber = true,
-                    minWidth = 90.dp,
-                    color = Color.Black
+                    color = Color.Black,
+                    isNumber = true
                 )
-
-                QtyDisplayBox(
-                    label = "Diff Qty",
-                    value = diffValue.toString(),
-                    modifier = Modifier.width(100.dp),
-                    color = if (diffValue < 0) Color.Red else Color(0xFF2E7D32)
+                SalesOrderEditableBox(
+                    label = "Unit Price",
+                    value = unitPriceInput,
+                    onValueChange = { input ->
+                        if (input.matches(Regex("^\\d*\\.?\\d*$"))) {
+                            unitPriceInput = input
+                            salesOrderViewModel.updateSelectedItem(
+                                itemCode = item.itemCode,
+                                qty = qtyInput,
+                                uom = selectedUom,
+                                unitPrice = unitPriceInput.toDoubleOrNull() ?: 0.0
+                            )
+                        }
+                    },
+                    color = Color.Black,
+                    isNumber = true
+                )
+                SalesOrderDisplayBox(
+                    label = "Subtotal",
+                    value = "%.2f".format(subtotalValue),
+                    color = if (subtotalValue >= 0) Color(0xFF2E7D32) else Color.Red
                 )
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditableQtyBox(
+private fun SalesOrderDropdown(
+    label: String,
+    selected: String,
+    options: List<String>,
+    onSelect: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    val textFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = Color.Black,
+        unfocusedTextColor = Color.Black,
+        cursorColor = Color.Black,
+        focusedBorderColor = Color(0xFFE53935),
+        unfocusedBorderColor = Color(0xFFE0E0E0),
+        focusedContainerColor = Color.White,
+        unfocusedContainerColor = Color.White
+    )
+
+    Column {
+        Text(
+            label,
+            fontSize = 11.sp,
+            color = Color.Gray,
+            modifier = Modifier.padding(bottom = 2.dp)
+        )
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded }
+        ) {
+            OutlinedTextField(
+                value = selected,
+                onValueChange = {},
+                readOnly = true,
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier
+                    .menuAnchor()
+                    .fillMaxWidth()
+                    .height(45.dp),
+                shape = RoundedCornerShape(4.dp),
+                textStyle = TextStyle(fontSize = 11.sp),
+                colors = textFieldColors
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.background(Color.White)
+            ) {
+                options.forEach { option ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(text = option, fontSize = 13.sp, color = Color.Black)
+                        },
+                        onClick = {
+                            onSelect(option)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SalesOrderDropdownUom(
+    label: String,
+    selected: String,
+    options: List<String>,
+    onSelect: (String) -> Unit,
+    width: Dp = 100.dp,
+    height: Dp = 45.dp
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    val textFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = Color.Black,
+        unfocusedTextColor = Color.Black,
+        cursorColor = Color.Black,
+        focusedBorderColor = Color(0xFFE53935),
+        unfocusedBorderColor = Color(0xFFE0E0E0),
+        focusedContainerColor = Color.White,
+        unfocusedContainerColor = Color.White
+    )
+
+    Column {
+        Text(label, fontSize = 10.sp, color = Color.Gray, modifier = Modifier.padding(bottom = 2.dp))
+        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
+            OutlinedTextField(
+                value = selected,
+                onValueChange = {},
+                readOnly = true,
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier.menuAnchor().width(width).height(height),
+                shape = RoundedCornerShape(4.dp),
+                textStyle = TextStyle(fontSize = 11.sp),
+                colors = textFieldColors
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.width(width).background(Color.White)
+            ) {
+                options.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(text = option, fontSize = 13.sp, color = Color.Black) },
+                        onClick = {
+                            onSelect(option)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SalesOrderEditableBox(
     label: String,
     value: String,
     onValueChange: (String) -> Unit,
@@ -566,12 +656,8 @@ fun EditableQtyBox(
     minWidth: Dp = 60.dp,
     isNumber: Boolean = false
 ) {
-    Column(
-        horizontalAlignment = Alignment.Start,
-        modifier = modifier.widthIn(min = minWidth)
-    ) {
+    Column(horizontalAlignment = Alignment.Start, modifier = modifier.widthIn(min = minWidth)) {
         Text(label, fontSize = 10.sp, color = Color.Gray)
-
         Box(
             modifier = Modifier
                 .height(35.dp)
@@ -579,7 +665,7 @@ fun EditableQtyBox(
                 .widthIn(min = minWidth)
                 .background(Color(0xFFF5F5F5), RoundedCornerShape(4.dp))
                 .padding(horizontal = 8.dp),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.CenterStart
         ) {
             BasicTextField(
                 value = value,
@@ -587,28 +673,19 @@ fun EditableQtyBox(
                 textStyle = TextStyle(
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = color,
-                    textAlign = TextAlign.Center
+                    color = color
                 ),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = if (isNumber) KeyboardType.Number else KeyboardType.Text
                 ),
-                modifier = Modifier.wrapContentWidth(),
-                decorationBox = { innerTextField ->
-                    Box(contentAlignment = Alignment.Center) {
-                        if (value.isEmpty()) {
-                            Text("0", color = Color.LightGray, fontSize = 14.sp)
-                        }
-                        innerTextField()
-                    }
-                }
+                modifier = Modifier.wrapContentWidth()
             )
         }
     }
 }
 
 @Composable
-fun QtyDisplayBox(
+private fun SalesOrderDisplayBox(
     label: String,
     value: String,
     modifier: Modifier = Modifier,
@@ -640,57 +717,8 @@ fun QtyDisplayBox(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DropdownLocation(label: String, selected: String, options: List<String>, onSelect: (String) -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-
-    val textFieldColors = OutlinedTextFieldDefaults.colors(
-        focusedTextColor = Color.Black,
-        unfocusedTextColor = Color.Black,
-        cursorColor = Color.Black,
-        focusedBorderColor = Color(0xFFE53935),
-        unfocusedBorderColor = Color(0xFFE0E0E0),
-        focusedContainerColor = Color.White,
-        unfocusedContainerColor = Color.White
-    )
-
-    Column {
-        Text(label, fontSize = 11.sp, color = Color.Gray, modifier = Modifier.padding(bottom = 2.dp))
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = !expanded }
-        ) {
-            OutlinedTextField(
-                value = selected,
-                onValueChange = {},
-                readOnly = true,
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                modifier = Modifier.menuAnchor().fillMaxWidth().height(45.dp),
-                shape = RoundedCornerShape(4.dp),
-                textStyle = TextStyle(fontSize = 11.sp),
-                colors = textFieldColors
-            )
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-                modifier = Modifier.background(Color.White)
-            ) {
-                options.forEach { option ->
-                    val isSelected = option == selected
-                    DropdownMenuItem(
-                        text = { Text(option, fontSize = 13.sp, color = Color.Black) },
-                        onClick = { onSelect(option); expanded = false },
-                        modifier = Modifier.background(if (isSelected) Color(0xFFBBDEFB) else Color.White)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun AdjustmentInputField(
+private fun SalesOrderInputField(
     label: String,
     value: String,
     onValueChange: (String) -> Unit,
