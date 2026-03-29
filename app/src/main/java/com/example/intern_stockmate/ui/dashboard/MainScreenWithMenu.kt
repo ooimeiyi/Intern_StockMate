@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.compose.*
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.intern_stockmate.model.HamburgerScreen
 import com.example.intern_stockmate.ui.contact.ContactScreen
 import com.example.intern_stockmate.ui.creditor.CreditorInfoScreenContainer
@@ -20,7 +21,12 @@ import com.example.intern_stockmate.ui.member.MemberInfoScreenContainer
 import com.example.intern_stockmate.ui.monthlySales.MonthlySalesScreenContainer
 import com.example.intern_stockmate.ui.salesOverview.SalesOverviewScreenContainer
 import com.example.intern_stockmate.ui.stockLIst.StockDetailScreen
+import com.example.intern_stockmate.ui.stockAdjustment.AdjustmentItemsScreen
+import com.example.intern_stockmate.ui.stockAdjustment.StockAdjustmentScreen
 import com.example.intern_stockmate.ui.stockLIst.StockListScreenContainer
+import com.example.intern_stockmate.viewModel.StockAdjustmentViewModel
+import com.example.intern_stockmate.viewModel.StockAdjustmentViewModelFactory
+import com.example.intern_stockmate.viewModel.StockViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -29,6 +35,14 @@ fun MainScreenWithMenu(
     onLogout: () -> Unit
 ) {
     val navController = rememberNavController()
+
+    val stockViewModel: StockViewModel = viewModel()
+    val stockAdjustmentViewModel: StockAdjustmentViewModel = viewModel(
+        factory = StockAdjustmentViewModelFactory(
+            application = androidx.compose.ui.platform.LocalContext.current.applicationContext as android.app.Application,
+            stockViewModel = stockViewModel
+        )
+    )
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -67,7 +81,7 @@ fun MainScreenWithMenu(
     ) {
         Scaffold(
             topBar = {
-                if (currentRoute != "stockDetail") {
+                if (currentRoute !in setOf("stockDetail", "adjustmentDetails")) {
                     TopAppBar(
                         title = {
                             val screen = HamburgerScreen.all.find { it.route == currentRoute }
@@ -113,7 +127,17 @@ fun MainScreenWithMenu(
                         }
                     }
 
-                    composable(HamburgerScreen.StockAdjustment.route) { }
+                    composable(HamburgerScreen.StockAdjustment.route) {
+                        StockAdjustmentScreen(navController = navController, stockViewModel = stockAdjustmentViewModel)
+                    }
+
+                    composable("adjustmentDetails") {
+                        AdjustmentItemsScreen(
+                            navController = navController,
+                            stockViewModel = stockViewModel,
+                            stockAdjustmentViewModel = stockAdjustmentViewModel
+                        )
+                    }
 
                     composable(HamburgerScreen.StockOrder.route) { }
 

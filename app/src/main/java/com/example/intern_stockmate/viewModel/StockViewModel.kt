@@ -24,6 +24,11 @@ class StockViewModel(
     val searchQuery = MutableStateFlow("")
     private val _selectedLocation = MutableStateFlow("")
 
+    val selectedLocation: StateFlow<String> = _selectedLocation.asStateFlow()
+
+    private val _locations = MutableStateFlow<List<String>>(emptyList())
+    val locations: StateFlow<List<String>> = _locations.asStateFlow()
+
     private val _isInvalidSearch = MutableStateFlow(false)
     val isInvalidSearch: StateFlow<Boolean> = _isInvalidSearch.asStateFlow()
 
@@ -84,6 +89,13 @@ class StockViewModel(
                 val parsed = rawItems.map { it.toStockItem() }
                 val grouped = groupStockItems(parsed)
                 _allItems.value = grouped
+                _locations.value = grouped.flatMap { item -> item.locationList.map { it.location } }
+                    .filter { it.isNotBlank() }
+                    .distinct()
+                    .sorted()
+                if (_selectedLocation.value.isBlank() && _locations.value.isNotEmpty()) {
+                    _selectedLocation.value = _locations.value.first()
+                }
                 _stockState.value = StockUiState.Success(grouped)
             }
             .addOnFailureListener { error ->
