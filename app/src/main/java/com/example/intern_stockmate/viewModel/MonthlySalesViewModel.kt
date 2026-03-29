@@ -31,12 +31,12 @@ class MonthlySalesViewModel(
         _monthlySalesState.value = MonthlySalesUiState.Loading
 
         firestore.collection(COLLECTION_NAME)
-            .document(year.toString())
+            .document(DOCUMENT_NAME)
             .get()
             .addOnSuccessListener { snapshot ->
                 if (!snapshot.exists()) {
                     _monthlySalesState.value = MonthlySalesUiState.Error(
-                        "Monthly sales for ${year.value} were not found."
+                        "Monthly sales document was not found."
                     )
                     return@addOnSuccessListener
                 }
@@ -87,6 +87,7 @@ class MonthlySalesViewModel(
 
     private companion object {
         const val COLLECTION_NAME = "YearlySales"
+        const val DOCUMENT_NAME = "Current"
     }
 }
 

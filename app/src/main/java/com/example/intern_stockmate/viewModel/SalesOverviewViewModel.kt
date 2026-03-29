@@ -52,7 +52,7 @@ class SalesOverviewViewModel(
         val todayDocId = LocalDate.now().format(TODAY_DOC_FORMATTER)
 
         firestore.collection(DAILY_COLLECTION)
-            .document(todayDocId)
+            .document(DOCUMENT_NAME)
             .get()
             .addOnSuccessListener { snapshot ->
                 if (!snapshot.exists()) {
@@ -144,6 +144,7 @@ class SalesOverviewViewModel(
         val TABS = listOf("Today", "Week", "Month", "Year")
         private const val DAILY_COLLECTION = "DailySalesSummary"
         private const val SUMMARY_COLLECTION = "SalesSummary"
+        private const val DOCUMENT_NAME = "Current"
         private val TODAY_DOC_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy", Locale.US)
     }
 }

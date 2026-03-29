@@ -19,6 +19,8 @@ import com.example.intern_stockmate.ui.itemInfo.ItemInfoScreenContainer
 import com.example.intern_stockmate.ui.member.MemberInfoScreenContainer
 import com.example.intern_stockmate.ui.monthlySales.MonthlySalesScreenContainer
 import com.example.intern_stockmate.ui.salesOverview.SalesOverviewScreenContainer
+import com.example.intern_stockmate.ui.stockLIst.StockDetailScreen
+import com.example.intern_stockmate.ui.stockLIst.StockListScreenContainer
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -98,7 +100,18 @@ fun MainScreenWithMenu(
                         DashboardScreen(onNavigate = ::navigateToScreen)
                     }
 
-                    composable(HamburgerScreen.StockList.route) { }
+                    composable(HamburgerScreen.StockList.route) {
+                        StockListScreenContainer(navController = navController)
+                    }
+
+                    composable("stockDetail") {
+                        val item = navController.previousBackStackEntry
+                            ?.savedStateHandle
+                            ?.get<com.example.intern_stockmate.model.StockItem>("selectedStockItem")
+                        if (item != null) {
+                            StockDetailScreen(navController = navController, item = item)
+                        }
+                    }
 
                     composable(HamburgerScreen.StockAdjustment.route) { }
 

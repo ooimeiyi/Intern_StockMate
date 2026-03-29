@@ -33,12 +33,12 @@ class HourlySalesViewModel(
         _hourlySalesState.value = HourlySalesUiState.Loading
 
         firestore.collection(COLLECTION_NAME)
-            .document(date.format(DOCUMENT_DATE_FORMAT))
+            .document(DOCUMENT_NAME)
             .get()
             .addOnSuccessListener { snapshot ->
                 if (!snapshot.exists()) {
                     _hourlySalesState.value = HourlySalesUiState.Error(
-                        "Hourly sales for ${date.format(DOCUMENT_DATE_FORMAT)} were not found."
+                        "Hourly sales document was not found."
                     )
                     return@addOnSuccessListener
                 }
@@ -85,7 +85,7 @@ class HourlySalesViewModel(
 
     private companion object {
         const val COLLECTION_NAME = "HourlySales"
-        val DOCUMENT_DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy", Locale.US)
+        const val DOCUMENT_NAME = "Current"
     }
 }
 

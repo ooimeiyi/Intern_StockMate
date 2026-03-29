@@ -370,10 +370,10 @@ private fun SalesTrendCard(
                     val popupX = (interactionOffset.x.toInt() + 50).coerceIn(0, canvasWidth.toInt().coerceAtLeast(popupWidth) - popupWidth)
                     val popupY = (interactionOffset.y.toInt() - popupHeight - 90).coerceAtLeast(0)
                     val (labelText, labelColor) = when (selectedTabIndex) {
-                        1 -> "POS: RM ${String.format("%,.0f", active.amount)}" to posColor
-                        2 -> "Invoice: RM ${String.format("%,.0f", active.amount)}" to invoiceColor
-                        3 -> "Cash Sales: RM ${String.format("%,.0f", active.amount)}" to cashColor
-                        else -> "Total: RM ${String.format("%,.0f", active.amount)}" to Color.Red
+                        1 -> "POS: RM ${formatSalesValue(active.amount)}" to posColor
+                        2 -> "Invoice: RM ${formatSalesValue(active.amount)}" to invoiceColor
+                        3 -> "Cash Sales: RM ${formatSalesValue(active.amount)}" to cashColor
+                        else -> "Total: RM ${formatSalesValue(active.amount)}" to Color.Red
                     }
 
                     Popup(offset = IntOffset(popupX, popupY)) {
@@ -382,9 +382,9 @@ private fun SalesTrendCard(
                                 Text("%02d:00".format(active.hour), fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.Black)
                                 Text(labelText, fontSize = 14.sp, color = labelColor, fontWeight = FontWeight.Bold)
                                 if (selectedTabIndex == 0) {
-                                    Text("POS: RM ${String.format("%,.0f", active.posSales)}", fontSize = 12.sp, color = posColor, fontWeight = FontWeight.SemiBold)
-                                    Text("Invoice: RM ${String.format("%,.0f", active.invoiceSales)}", fontSize = 12.sp, color = invoiceColor, fontWeight = FontWeight.SemiBold)
-                                    Text("Cash: RM ${String.format("%,.0f", active.cashSales)}", fontSize = 12.sp, color = cashColor, fontWeight = FontWeight.SemiBold)
+                                    Text("POS: RM ${formatSalesValue(active.posSales)}", fontSize = 12.sp, color = posColor, fontWeight = FontWeight.SemiBold)
+                                    Text("Invoice: RM ${formatSalesValue(active.invoiceSales)}", fontSize = 12.sp, color = invoiceColor, fontWeight = FontWeight.SemiBold)
+                                    Text("Cash: RM ${formatSalesValue(active.cashSales)}", fontSize = 12.sp, color = cashColor, fontWeight = FontWeight.SemiBold)
                                 }
                             }
                         }
@@ -407,7 +407,7 @@ private fun HourlyChartLegend(color: Color, label: String, amount: Double, modif
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         Box(modifier = Modifier.size(10.dp).background(color, CircleShape))
         Spacer(modifier = Modifier.width(6.dp))
-        Text("$label: ${String.format("%,.0f", amount)}", fontSize = 12.sp, color = Color(0xFF5A6B82))
+        Text("$label: ${formatSalesValue(amount)}", fontSize = 12.sp, color = Color(0xFF5A6B82))
     }
 }
 
@@ -458,7 +458,7 @@ fun DetailedLogSection(data: List<HourlySales>, selectedTabIndex: Int) {
                         Spacer(modifier = Modifier.weight(1f))
 
                         Text(
-                            text = "RM ${String.format("%,.0f", sales.amount)}",
+                            text = "RM ${formatSalesValue(sales.amount)}",
                             fontWeight = FontWeight.ExtraBold,
                             fontSize = 14.sp,
                             color = Color.Black
@@ -569,4 +569,9 @@ fun DetailedLogSection(data: List<HourlySales>, selectedTabIndex: Int) {
             }
         }
     }
+}
+
+private fun formatSalesValue(value: Double): String {
+    val formatted = String.format("%,.2f", value)
+    return formatted.trimEnd('0').trimEnd('.')
 }

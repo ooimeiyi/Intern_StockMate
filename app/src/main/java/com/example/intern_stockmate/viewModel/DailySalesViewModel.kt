@@ -33,12 +33,12 @@ class DailySalesViewModel(
         _dailySalesState.value = DailySalesUiState.Loading
 
         firestore.collection(COLLECTION_NAME)
-            .document(yearMonth.format(DOCUMENT_MONTH_FORMAT))
+            .document(DOCUMENT_NAME)
             .get()
             .addOnSuccessListener { snapshot ->
                 if (!snapshot.exists()) {
                     _dailySalesState.value = DailySalesUiState.Error(
-                        "Daily sales for ${yearMonth.format(DOCUMENT_MONTH_FORMAT)} were not found."
+                        "Daily sales document was not found."
                     )
                     return@addOnSuccessListener
                 }
@@ -89,7 +89,7 @@ class DailySalesViewModel(
 
     private companion object {
         const val COLLECTION_NAME = "MonthlySales"
-        val DOCUMENT_MONTH_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("MM-yyyy", Locale.US)
+        const val DOCUMENT_NAME = "Current"
     }
 }
 
