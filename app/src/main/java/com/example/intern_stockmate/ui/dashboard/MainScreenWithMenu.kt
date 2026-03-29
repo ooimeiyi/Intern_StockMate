@@ -22,6 +22,7 @@ import com.example.intern_stockmate.ui.itemInfo.ItemInfoScreenContainer
 import com.example.intern_stockmate.ui.member.MemberInfoScreenContainer
 import com.example.intern_stockmate.ui.monthlySales.MonthlySalesScreenContainer
 import com.example.intern_stockmate.ui.salesOverview.SalesOverviewScreenContainer
+import com.example.intern_stockmate.ui.salesRank.SalesRankScreenContainer
 import com.example.intern_stockmate.ui.stockLIst.StockDetailScreen
 import com.example.intern_stockmate.ui.stockAdjustment.AdjustmentItemsScreen
 import com.example.intern_stockmate.ui.stockAdjustment.StockAdjustmentScreen
@@ -182,7 +183,9 @@ fun MainScreenWithMenu(
                         MonthlySalesScreenContainer()
                     }
 
-                    composable(HamburgerScreen.Rank.route) { }
+                    composable(HamburgerScreen.Rank.route) {
+                        SalesRankScreenContainer()
+                    }
 
                     composable(HamburgerScreen.Items.route) {
                         ItemInfoScreenContainer()
