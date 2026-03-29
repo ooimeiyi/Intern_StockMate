@@ -65,7 +65,6 @@ import com.example.intern_stockmate.utils.base64ToBitmap
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StockDetailScreen(
-    navController: NavHostController,
     item: StockItem
 ) {
     val scrollState = rememberScrollState()
@@ -78,39 +77,12 @@ fun StockDetailScreen(
         selectedImageUri = uri
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(
-                            onClick = {
-                                navController.popBackStack()
-                            },
-                            modifier = Modifier.size(48.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.ArrowBack,
-                                contentDescription = "Back",
-                                tint = Color.White
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Stock Details", fontSize = 20.sp, color = Color.White)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Red)
-            )
-        },
-        containerColor = Color.White
-    ) { padding ->
-        Column(
-            modifier = Modifier.fillMaxSize()
-                .fillMaxSize()
-                .background(Color.White)
-                .verticalScroll(scrollState)
-                .padding(padding)
-        ) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+            .verticalScroll(scrollState)
+    ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -405,7 +377,7 @@ fun StockDetailScreen(
             }
         }
     }
-}
+
 
 @Composable
 fun InfoCard(

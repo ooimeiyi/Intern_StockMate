@@ -1,7 +1,9 @@
 package com.example.intern_stockmate.ui.dashboard
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -44,6 +46,8 @@ fun MainScreenWithMenu(
         )
     )
 
+    val isEditMode by stockAdjustmentViewModel.isEditMode.collectAsState()
+
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
@@ -81,31 +85,51 @@ fun MainScreenWithMenu(
     ) {
         Scaffold(
             topBar = {
-                if (currentRoute !in setOf("stockDetail", "adjustmentDetails")) {
-                    TopAppBar(
-                        title = {
-                            val screen = HamburgerScreen.all.find { it.route == currentRoute }
-                            val displayTitle = screen?.topBarTitle ?: "Sales Mate"
-                            Text(displayTitle, color = Color.White, fontWeight = FontWeight.Bold)
-                        },
-                        navigationIcon = {
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                Icon(
-                                    Icons.Default.Menu,
-                                    contentDescription = "Menu",
-                                    tint = Color.White
-                                )
+                val isDetailRoute = currentRoute in setOf("stockDetail", "adjustmentDetails")
+                TopAppBar(
+                    title = {
+                        val displayTitle = when (currentRoute) {
+                            "stockDetail" -> "Stock Details"
+                            "adjustmentDetails" -> if (isEditMode) "Edit Stock Take" else "New Stock Take"
+                            else -> HamburgerScreen.all.find { it.route == currentRoute }?.topBarTitle ?: "Sales Mate"
+                        }
+                        Text(displayTitle, color = Color.White, fontWeight = FontWeight.Bold)
+                    },
+                    navigationIcon = {
+                        IconButton(
+                            onClick = {
+                                if (isDetailRoute) {
+                                    if (currentRoute == "adjustmentDetails") {
+                                        navController.previousBackStackEntry
+                                            ?.savedStateHandle
+                                            ?.set("selectedTab", 2)
+                                    }
+                                    navController.popBackStack()
+                                } else {
+                                    scope.launch { drawerState.open() }
+                                }
                             }
-                        },
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = Color.Red
-                        )
+                        ) {
+                            Icon(
+                                imageVector = if (isDetailRoute) Icons.Default.ArrowBack else Icons.Default.Menu,
+                                contentDescription = if (isDetailRoute) "Back" else "Menu",
+                                tint = Color.White
+                            )
+                        }
+                                     },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Red
                     )
-                }
+                )
             },
             contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { paddingValues ->
-            Box(modifier = Modifier.padding(paddingValues)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White)
+                    .padding(paddingValues)
+            ) {
                 NavHost(
                     navController = navController,
                     startDestination = HamburgerScreen.Dashboard.route
@@ -123,7 +147,7 @@ fun MainScreenWithMenu(
                             ?.savedStateHandle
                             ?.get<com.example.intern_stockmate.model.StockItem>("selectedStockItem")
                         if (item != null) {
-                            StockDetailScreen(navController = navController, item = item)
+                            StockDetailScreen(item = item)
                         }
                     }
 

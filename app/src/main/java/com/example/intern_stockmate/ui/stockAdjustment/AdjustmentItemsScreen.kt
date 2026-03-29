@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -96,7 +97,6 @@ fun AdjustmentItemsScreen(
     val physicalCounts = stockAdjustmentViewModel.physicalCounts
     val diffCounts = stockAdjustmentViewModel.diffCounts
     val selectedHeader by stockAdjustmentViewModel.selectedHeader.collectAsState()
-    val isEditMode by stockAdjustmentViewModel.isEditMode.collectAsState()
 
     val searchQuery by stockViewModel.searchQuery.collectAsState()
     var localQuery by remember { mutableStateOf(searchQuery) }
@@ -161,31 +161,7 @@ fun AdjustmentItemsScreen(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(
-                            onClick = {
-                                navController.previousBackStackEntry
-                                    ?.savedStateHandle
-                                    ?.set("selectedTab", 2)
-                                navController.popBackStack()
-                            },
-                            modifier = Modifier.size(48.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.ArrowBack,
-                                contentDescription = "Back",
-                                tint = Color.White
-                            )
-                        }
-                        Text(if (isEditMode) "Edit Stock Take" else "New Stock Take", fontSize = 18.sp, color = Color.White)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Red)
-            )
-        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             AdjustmentBottomBar(
                 description = description,

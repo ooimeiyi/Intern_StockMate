@@ -9,6 +9,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -26,21 +28,27 @@ fun StockMateScreen() {
         modifier = Modifier.fillMaxSize(),
         color = Color.White
     ) {
-        if (isLoggedIn) {
-            MainScreenWithMenu(
-                onLogout = {
-                    isLoggedIn = false
-                    loginViewModel.clearFields()
-                }
-            )
-        } else {
-            LogInScreen(
-                loginViewModel = loginViewModel,
-                onLoginSuccess = {
-                    isLoggedIn = true
-                    loginViewModel.clearFields()
-                }
-            )
+        Crossfade(
+            targetState = isLoggedIn,
+            animationSpec = tween(durationMillis = 220),
+            label = "auth_navigation"
+        ) { loggedIn ->
+            if (loggedIn) {
+                MainScreenWithMenu(
+                    onLogout = {
+                        isLoggedIn = false
+                        loginViewModel.clearFields()
+                    }
+                )
+            } else {
+                LogInScreen(
+                    loginViewModel = loginViewModel,
+                    onLoginSuccess = {
+                        isLoggedIn = true
+                        loginViewModel.clearFields()
+                    }
+                )
+            }
         }
     }
 }
