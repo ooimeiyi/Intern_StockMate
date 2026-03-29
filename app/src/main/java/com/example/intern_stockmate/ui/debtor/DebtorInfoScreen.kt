@@ -58,8 +58,7 @@ fun DebtorInfoScreenContainer(
     ) {
         DebtorInfoScreen(
             summary = summary,
-            outstandingDebtorList = outstandingList,
-            onRefresh = viewModel::fetchDebtorSummary
+            outstandingDebtorList = outstandingList
         )
 
         when (state) {
@@ -98,8 +97,7 @@ fun DebtorInfoScreenContainer(
 @Composable
 fun DebtorInfoScreen(
     summary: DebtorSummary,
-    outstandingDebtorList: List<OutstandingDebtorItem>,
-    onRefresh: () -> Unit
+    outstandingDebtorList: List<OutstandingDebtorItem>
 ) {
     var isExpanded by remember { mutableStateOf(true) }
     val scrollState = rememberScrollState()
@@ -168,21 +166,6 @@ fun DebtorInfoScreen(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(if (isExpanded) "^" else "v", fontWeight = FontWeight.Bold)
-            }
-
-            OutlinedButton(
-                onClick = onRefresh,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(48.dp),
-                shape = RoundedCornerShape(8.dp),
-                border = BorderStroke(1.dp, Color(0xFFD32F2F)),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Color.White,
-                    contentColor = Color(0xFFD32F2F)
-                )
-            ) {
-                Text("Refresh", fontWeight = FontWeight.Bold)
             }
         }
 

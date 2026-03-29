@@ -48,8 +48,7 @@ fun MemberInfoScreenContainer(
             .background(Color.White)
     ) {
         MemberInfoScreen(
-            summary = summary,
-            onRefresh = viewModel::fetchMemberSummary
+            summary = summary
         )
 
         when (state) {
@@ -87,8 +86,7 @@ fun MemberInfoScreenContainer(
 
 @Composable
 fun MemberInfoScreen(
-    summary: MemberInfo,
-    onRefresh: () -> Unit
+    summary: MemberInfo
 ) {
     val scrollState = rememberScrollState()
 
@@ -114,31 +112,6 @@ fun MemberInfoScreen(
                 MemberSummaryRow("Gender - Male", summary.maleCount.toString())
                 MemberSummaryRow("Gender - Female", summary.femaleCount.toString())
                 MemberSummaryRow("Member's This Month Birthday", summary.birthdayThisMonth.toString())
-                MemberSummaryRow("Last Update", summary.lastUpdate.ifBlank { "-" })
-            }
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            OutlinedButton(
-                onClick = onRefresh,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, Color(0xFFD32F2F)),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Color.White,
-                    contentColor = Color(0xFFD32F2F)
-                )
-            ) {
-                Text(
-                    text = "Refresh",
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 18.sp
-                )
             }
         }
     }

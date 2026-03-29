@@ -372,7 +372,7 @@ fun SalesOrderDetailsScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "Search item to add sales order lines",
+                                text = "Search item to add sales order",
                                 color = Color.Gray
                             )
                         }
@@ -386,17 +386,6 @@ fun SalesOrderDetailsScreen(
                         salesOrderViewModel = salesOrderViewModel
                     )
                 }
-            }
-
-            item {
-                val added = salesOrderViewModel.selectedItems.size
-                Text(
-                    text = "Added items: $added",
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.End,
-                    color = Color.DarkGray,
-                    fontSize = 12.sp
-                )
             }
         }
     }

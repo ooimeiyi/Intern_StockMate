@@ -137,10 +137,6 @@ class SalesOrderViewModel(
         unitPrice: Double
     ) {
         val normalizedQty = qty.trim()
-        if (normalizedQty.isBlank()) {
-            selectedItems.remove(itemCode)
-            return
-        }
 
         selectedItems[itemCode] = SalesOrderItemInput(
             itemCode = itemCode,
@@ -185,7 +181,14 @@ class SalesOrderViewModel(
                 }.sortedByDescending { it.date }
 
                 val localMap = _savedHeaders.value.associateBy { it.soNo }.toMutableMap()
-                headers.forEach { header -> localMap[header.soNo] = header }
+                headers.forEach { header ->
+                    val localHeader = localMap[header.soNo]
+                    localMap[header.soNo] = if (localHeader != null && localHeader.status == "KIV") {
+                        localHeader
+                    } else {
+                        header
+                    }
+                }
                 _savedHeaders.value = localMap.values.sortedByDescending { it.date }
                 persistHeadersToLocal()
             }
@@ -199,6 +202,7 @@ class SalesOrderViewModel(
             onResult(false, "No active sales order")
             return
         }
+
         val wasEditMode = _isEditMode.value
 
         if (current.debtor.isBlank() || current.date.isBlank() || current.soNo.isBlank() || current.location.isBlank()) {
@@ -208,14 +212,7 @@ class SalesOrderViewModel(
 
         val kivHeader = current.copy(
             status = "KIV",
-            items = selectedItems.values.map {
-                SalesOrderDetail(
-                    itemCode = it.itemCode,
-                    qty = it.qty,
-                    uom = it.uom,
-                    unitPrice = it.unitPrice
-                )
-            }.sortedBy { it.itemCode }
+            items = buildDetailsFromSelectedItems()
         )
 
         _selectedHeader.value = kivHeader
@@ -248,14 +245,7 @@ class SalesOrderViewModel(
 
         val finalized = current.copy(
             status = status,
-            items = selectedItems.values.map {
-                SalesOrderDetail(
-                    itemCode = it.itemCode,
-                    qty = it.qty,
-                    uom = it.uom,
-                    unitPrice = it.unitPrice
-                )
-            }.sortedBy { it.itemCode }
+            items = buildDetailsFromSelectedItems()
         )
 
         val payload = mapOf(
@@ -370,6 +360,20 @@ class SalesOrderViewModel(
 
     private fun formatSoNo(sequence: Int): String {
         return "$soPrefix${sequence.toString().padStart(soDigits, '0')}"
+    }
+
+    private fun buildDetailsFromSelectedItems(): List<SalesOrderDetail> {
+        return selectedItems.values
+            .filter { it.qty.isNotBlank() }
+            .map {
+                SalesOrderDetail(
+                    itemCode = it.itemCode,
+                    qty = it.qty,
+                    uom = it.uom,
+                    unitPrice = it.unitPrice
+                )
+            }
+            .sortedBy { it.itemCode }
     }
 
     private companion object {

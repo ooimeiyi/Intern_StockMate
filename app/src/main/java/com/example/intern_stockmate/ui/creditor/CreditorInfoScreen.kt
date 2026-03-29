@@ -58,8 +58,7 @@ fun CreditorInfoScreenContainer(
     ) {
         CreditorInfoScreen(
             summary = summary,
-            outstandingCreditorList = outstandingList,
-            onRefresh = viewModel::fetchCreditorSummary
+            outstandingCreditorList = outstandingList
         )
 
         when (state) {
@@ -98,8 +97,7 @@ fun CreditorInfoScreenContainer(
 @Composable
 fun CreditorInfoScreen(
     summary: CreditorSummary,
-    outstandingCreditorList: List<OutstandingCreditorItem>,
-    onRefresh: () -> Unit
+    outstandingCreditorList: List<OutstandingCreditorItem>
 ) {
     var isExpanded by remember { mutableStateOf(true) }
     val scrollState = rememberScrollState()
@@ -168,21 +166,6 @@ fun CreditorInfoScreen(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(if (isExpanded) "^" else "v", fontWeight = FontWeight.Bold)
-            }
-
-            OutlinedButton(
-                onClick = onRefresh,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(48.dp),
-                shape = RoundedCornerShape(8.dp),
-                border = BorderStroke(1.dp, Color(0xFFD32F2F)),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Color.White,
-                    contentColor = Color(0xFFD32F2F)
-                )
-            ) {
-                Text("Refresh", fontWeight = FontWeight.Bold)
             }
         }
 
