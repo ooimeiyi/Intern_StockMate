@@ -64,12 +64,12 @@ fun DashboardScreen(
         item {
             Row(Modifier.padding(horizontal = 8.dp)) {
                 Box(Modifier.weight(1f)) {
-                    DashboardCard("Sales Overview", Icons.Default.Schedule) {
+                    DashboardCard("Sales Overview", Icons.Default.PieChart) {
                         onNavigate(HamburgerScreen.SalesOverview)
                     }
                 }
                 Box(Modifier.weight(1f)) {
-                    DashboardCard("Hourly Sales", Icons.Default.CalendarToday) {
+                    DashboardCard("Hourly Sales", Icons.Default.Schedule) {
                         onNavigate(HamburgerScreen.HourlySales)
                     }
                 }
@@ -77,12 +77,12 @@ fun DashboardScreen(
 
             Row(Modifier.padding(horizontal = 8.dp)) {
                 Box(Modifier.weight(1f)) {
-                    DashboardCard("Daily Sales", Icons.Default.BarChart) {
+                    DashboardCard("Daily Sales", Icons.Default.Today) {
                         onNavigate(HamburgerScreen.DailySales)
                     }
                 }
                 Box(Modifier.weight(1f)) {
-                    DashboardCard("Monthly Sales", Icons.Default.Star) {
+                    DashboardCard("Monthly Sales", Icons.Default.DateRange) {
                         onNavigate(HamburgerScreen.MonthlySales)
                     }
                 }
@@ -90,7 +90,7 @@ fun DashboardScreen(
 
             Row(Modifier.padding(horizontal = 8.dp)) {
                 Box(Modifier.weight(1f)) {
-                    DashboardCard("Sales Rank", Icons.Default.Star) {
+                    DashboardCard("Sales Rank", Icons.Default.TrendingUp) {
                         onNavigate(HamburgerScreen.Rank)
                     }
                 }
@@ -104,12 +104,12 @@ fun DashboardScreen(
         item {
             Row(Modifier.padding(horizontal = 8.dp)) {
                 Box(Modifier.weight(1f)) {
-                    DashboardCard("Member Info", Icons.Default.Schedule) {
+                    DashboardCard("Member Info", Icons.Default.AccountCircle) {
                         onNavigate(HamburgerScreen.Members)
                     }
                 }
                 Box(Modifier.weight(1f)) {
-                    DashboardCard("Debtor Info", Icons.Default.CalendarToday) {
+                    DashboardCard("Debtor Info", Icons.Default.BusinessCenter) {
                         onNavigate(HamburgerScreen.Debtor)
                     }
                 }
@@ -117,7 +117,7 @@ fun DashboardScreen(
 
             Row(Modifier.padding(horizontal = 8.dp)) {
                 Box(Modifier.weight(1f)) {
-                    DashboardCard("Creditor Info", Icons.Default.BarChart) {
+                    DashboardCard("Creditor Info", Icons.Default.CreditCard) {
                         onNavigate(HamburgerScreen.Creditor)
                     }
                 }
@@ -131,12 +131,12 @@ fun DashboardScreen(
         item {
             Row(Modifier.padding(horizontal = 8.dp)) {
                 Box(Modifier.weight(1f)) {
-                    DashboardCard("Configuration", Icons.Default.Schedule) {
+                    DashboardCard("Configuration", Icons.Default.Settings) {
                         onNavigate(HamburgerScreen.Config)
                     }
                 }
                 Box(Modifier.weight(1f)) {
-                    DashboardCard("Contact Us", Icons.Default.CalendarToday) {
+                    DashboardCard("Contact Us", Icons.Default.Phone) {
                         onNavigate(HamburgerScreen.Contact)
 
                     }

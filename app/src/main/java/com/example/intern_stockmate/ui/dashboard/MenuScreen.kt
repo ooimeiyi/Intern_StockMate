@@ -75,12 +75,6 @@ fun MenuScreen(
                 )
 
                 DrawerMenuItem(
-                    screen = HamburgerScreen.SalesOverview,
-                    currentRoute = currentRoute,
-                    onItemClick = onItemClick
-                )
-
-                DrawerMenuItem(
                     screen = HamburgerScreen.StockList,
                     currentRoute = currentRoute,
                     onItemClick = onItemClick
@@ -107,6 +101,7 @@ fun MenuScreen(
 
                 if (isSalesReportExpanded) {
                     listOf(
+                        HamburgerScreen.SalesOverview,
                         HamburgerScreen.HourlySales,
                         HamburgerScreen.DailySales,
                         HamburgerScreen.MonthlySales,
