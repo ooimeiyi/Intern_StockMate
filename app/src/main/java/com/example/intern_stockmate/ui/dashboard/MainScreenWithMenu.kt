@@ -2,14 +2,19 @@ package com.example.intern_stockmate.ui.dashboard
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.intern_stockmate.model.HamburgerScreen
@@ -72,6 +77,16 @@ fun MainScreenWithMenu(
         }
     }
 
+    fun navigateToDashboard() {
+        navController.navigate(HamburgerScreen.Dashboard.route) {
+            popUpTo(navController.graph.startDestinationId) {
+                saveState = true
+            }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
@@ -99,6 +114,7 @@ fun MainScreenWithMenu(
         Scaffold(
             topBar = {
                 val isDetailRoute = currentRoute in setOf("stockDetail", "adjustmentDetails", "salesOrderDetails")
+                val isDashboardRoute = currentRoute == null || currentRoute == HamburgerScreen.Dashboard.route
                 TopAppBar(
                     title = {
                         val displayTitle = when (currentRoute) {
@@ -110,27 +126,59 @@ fun MainScreenWithMenu(
                         Text(displayTitle, color = Color.White, fontWeight = FontWeight.Bold)
                     },
                     navigationIcon = {
-                        IconButton(
-                            onClick = {
-                                if (isDetailRoute) {
-                                    if (currentRoute == "adjustmentDetails") {
-                                        navController.previousBackStackEntry
-                                            ?.savedStateHandle
-                                            ?.set("selectedTab", 2)
+                        if (!isDashboardRoute) {
+                            IconButton(
+                                onClick = {
+                                    if (isDetailRoute) {
+                                        if (currentRoute == "adjustmentDetails") {
+                                            navController.previousBackStackEntry
+                                                ?.savedStateHandle
+                                                ?.set("selectedTab", 2)
+                                        }
+                                        navController.popBackStack()
+                                    } else {
+                                        navigateToDashboard()
                                     }
-                                    navController.popBackStack()
+                                }
+                            ) {
+                                if (isDetailRoute) {
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowBack,
+                                        contentDescription = "Back",
+                                        tint = Color.White
+                                    )
                                 } else {
-                                    scope.launch { drawerState.open() }
+                                    // Home icon with square box
+                                    Box(
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .background(
+                                                color = Color.White.copy(alpha = 0f),
+                                                shape = RoundedCornerShape(2.dp)
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Home,
+                                            contentDescription = "Home",
+                                            tint = Color.White
+                                        )
+                                    }
                                 }
                             }
-                        ) {
-                            Icon(
-                                imageVector = if (isDetailRoute) Icons.Default.ArrowBack else Icons.Default.Menu,
-                                contentDescription = if (isDetailRoute) "Back" else "Menu",
-                                tint = Color.White
-                            )
                         }
-                                     },
+                    },
+                    actions = {
+                        if (isDashboardRoute) {
+                            IconButton(onClick = onLogout) {
+                                Icon(
+                                    imageVector = Icons.Default.Logout,
+                                    contentDescription = "Logout",
+                                    tint = Color.White
+                                )
+                            }
+                        }
+                    },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Red
                     )
