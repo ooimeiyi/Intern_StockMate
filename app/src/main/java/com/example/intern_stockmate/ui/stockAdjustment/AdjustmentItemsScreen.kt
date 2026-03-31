@@ -124,6 +124,7 @@ fun AdjustmentItemsScreen(
     var showStockPicker by remember { mutableStateOf(false) }
     var stockPickerQuery by remember { mutableStateOf("") }
     val manuallySelectedCodes = remember { mutableStateListOf<String>() }
+    val sessionTrackedCodes = remember { mutableStateListOf<String>() }
     var pickerSelectedCode by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(locations, selectedLocation, selectedHeader) {
@@ -324,39 +325,59 @@ fun AdjustmentItemsScreen(
             }
 
             val isSearching = searchQuery.isNotBlank()
+            val pinnedItems = allItems.filter { stockItem ->
+                val hasPhysicalQty = physicalCounts[stockItem.itemCode].orEmpty().isNotBlank()
+                val isSessionTracked = sessionTrackedCodes.contains(stockItem.itemCode) ||
+                        manuallySelectedCodes.contains(stockItem.itemCode)
+                hasPhysicalQty || isSessionTracked
+            }
+            val searchedItems = if (isSearching) filteredItems else emptyList()
+            val itemsToShow = if (isSearching) {
+                (pinnedItems + searchedItems).distinctBy { it.itemCode }
+            } else {
+                pinnedItems
+            }
+
             if (isSearching && isInvalidSearch) {
                 item {
-                    Box(modifier = Modifier.fillMaxWidth().padding(top = 20.dp), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Text("No matching item found. Please try again", color = Color.Red)
                     }
                 }
-            } else {
-                val itemsToShow = if (isSearching) {
-                    filteredItems
-                } else {
-                    val selectedCodes = physicalCounts.keys + manuallySelectedCodes
-                    allItems.filter { selectedCodes.contains(it.itemCode) }
-                }
+            }
 
-                if (!isSearching && itemsToShow.isEmpty()) {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 20.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "Search item to add stock adjustment",
-                                color = Color.Gray
-                            )
-                        }
+            if (!isSearching && itemsToShow.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 20.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Search item to add stock adjustment",
+                            color = Color.Gray
+                        )
                     }
                 }
+            }
 
-                items(itemsToShow) { item ->
-                    StockItemRowLogic(item, selectedLocation, physicalCounts, diffCounts)
-                }
+            items(itemsToShow) { item ->
+                StockItemRowLogic(
+                    stockItem = item,
+                    selectedLocation = selectedLocation,
+                    physicalCounts = physicalCounts,
+                    diffCounts = diffCounts,
+                    onTrackItemInSession = { itemCode ->
+                        if (!sessionTrackedCodes.contains(itemCode)) {
+                            sessionTrackedCodes.add(itemCode)
+                        }
+                    }
+                )
+
             }
         }
     }
@@ -412,6 +433,9 @@ fun AdjustmentItemsScreen(
                         items(pickerItems) { pickerItem ->
                             FilterItemRow(item = pickerItem) {
                                 manuallySelectedCodes.add(pickerItem.itemCode)
+                                if (!sessionTrackedCodes.contains(pickerItem.itemCode)) {
+                                    sessionTrackedCodes.add(pickerItem.itemCode)
+                                }
                                 if (!physicalCounts.containsKey(pickerItem.itemCode)) {
                                     physicalCounts[pickerItem.itemCode] = ""
 
@@ -565,7 +589,8 @@ fun StockItemRowLogic(
     stockItem: StockItem,
     selectedLocation: String,
     physicalCounts: MutableMap<String, String>,
-    diffCounts: MutableMap<String, Int>
+    diffCounts: MutableMap<String, Int>,
+    onTrackItemInSession: (String) -> Unit
 ) {
     val key = stockItem.itemCode
     StockItemFilterRow(
@@ -575,9 +600,10 @@ fun StockItemRowLogic(
         diffValue = diffCounts[key] ?: 0,
         onPhysicalChange = { newValue ->
             if (newValue.all { it.isDigit() } || newValue.isEmpty()) {
+                onTrackItemInSession(key)
                 physicalCounts[key] = newValue
                 val onHand = stockItem.locationList.find { it.location == selectedLocation }?.qty ?: 0
-                diffCounts[key] = (newValue.toIntOrNull() ?: 0) - onHand
+                diffCounts[key] = if (newValue.isBlank()) 0 else (newValue.toIntOrNull() ?: 0) - onHand
             }
         }
     )
