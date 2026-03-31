@@ -1,4 +1,4 @@
-package com.example.intern_stockmate.ui.dashboard
+/*package com.example.intern_stockmate.ui.dashboard
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -261,3 +261,30 @@ fun ExpandableDrawerMenuItem(
         }
     }
 }
+
+    // Usage in MainScreenWithMenu
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            MenuScreen(
+                currentRoute = currentRoute,
+                onItemClick = { screen ->
+                    scope.launch {
+                        drawerState.close()
+                        navigateToScreen(screen)
+                    }
+                },
+                onLogout = {
+                    scope.launch {
+                        drawerState.close()
+                        navController.popBackStack(HamburgerScreen.Dashboard.route, false)
+                        onLogout()
+                    }
+                }
+            )
+        }
+    ) {
+        Scaffold(
+ */

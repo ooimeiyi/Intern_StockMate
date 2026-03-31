@@ -68,7 +68,6 @@ fun MainScreenWithMenu(
     val isEditMode by stockAdjustmentViewModel.isEditMode.collectAsState()
     val isSalesOrderEditMode by salesOrderViewModel.isEditMode.collectAsState()
 
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
     fun navigateToScreen(screen: HamburgerScreen) {
@@ -92,208 +91,189 @@ fun MainScreenWithMenu(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            MenuScreen(
-                currentRoute = currentRoute,
-                onItemClick = { screen ->
-                    scope.launch {
-                        drawerState.close()
-                        navigateToScreen(screen)
+    Scaffold(
+        topBar = {
+            val isDetailRoute = currentRoute in setOf("stockDetail", "adjustmentDetails", "salesOrderDetails")
+            val isDashboardRoute = currentRoute == null || currentRoute == HamburgerScreen.Dashboard.route
+            TopAppBar(
+                title = {
+                    val displayTitle = when (currentRoute) {
+                        "stockDetail" -> "Stock Details"
+                        "adjustmentDetails" -> if (isEditMode) "Edit Stock Take" else "New Stock Take"
+                        "salesOrderDetails" -> if (isSalesOrderEditMode) "Edit Sales Order" else "New Sales Order"
+                        else -> HamburgerScreen.all.find { it.route == currentRoute }?.topBarTitle ?: "Sales Mate"
                     }
+                    Text(displayTitle, color = Color.White, fontWeight = FontWeight.Bold)
                 },
-                onLogout = {
-                    scope.launch {
-                        drawerState.close()
-                        navController.popBackStack(HamburgerScreen.Dashboard.route, false)
-                        onLogout()
-                    }
-                }
-            )
-        }
-    ) {
-        Scaffold(
-            topBar = {
-                val isDetailRoute = currentRoute in setOf("stockDetail", "adjustmentDetails", "salesOrderDetails")
-                val isDashboardRoute = currentRoute == null || currentRoute == HamburgerScreen.Dashboard.route
-                TopAppBar(
-                    title = {
-                        val displayTitle = when (currentRoute) {
-                            "stockDetail" -> "Stock Details"
-                            "adjustmentDetails" -> if (isEditMode) "Edit Stock Take" else "New Stock Take"
-                            "salesOrderDetails" -> if (isSalesOrderEditMode) "Edit Sales Order" else "New Sales Order"
-                            else -> HamburgerScreen.all.find { it.route == currentRoute }?.topBarTitle ?: "Sales Mate"
-                        }
-                        Text(displayTitle, color = Color.White, fontWeight = FontWeight.Bold)
-                    },
-                    navigationIcon = {
-                        if (!isDashboardRoute) {
-                            IconButton(
-                                onClick = {
-                                    if (isDetailRoute) {
-                                        if (currentRoute == "adjustmentDetails") {
-                                            navController.previousBackStackEntry
-                                                ?.savedStateHandle
-                                                ?.set("selectedTab", 2)
-                                        }
-                                        navController.popBackStack()
-                                    } else {
-                                        navigateToDashboard()
-                                    }
-                                }
-                            ) {
+                navigationIcon = {
+                    if (!isDashboardRoute) {
+                        IconButton(
+                            onClick = {
                                 if (isDetailRoute) {
-                                    Icon(
-                                        imageVector = Icons.Default.ArrowBack,
-                                        contentDescription = "Back",
-                                        tint = Color.White
-                                    )
-                                } else {
-                                    // Home icon with square box
-                                    Box(
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .background(
-                                                color = Color.White.copy(alpha = 0f),
-                                                shape = RoundedCornerShape(2.dp)
-                                            ),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Home,
-                                            contentDescription = "Home",
-                                            tint = Color.White
-                                        )
+                                    if (currentRoute == "adjustmentDetails") {
+                                        navController.previousBackStackEntry
+                                            ?.savedStateHandle
+                                            ?.set("selectedTab", 2)
                                     }
+                                    navController.popBackStack()
+                                } else {
+                                    navigateToDashboard()
                                 }
                             }
-                        }
-                    },
-                    actions = {
-                        if (isDashboardRoute) {
-                            IconButton(onClick = onLogout) {
+                        ) {
+                            if (isDetailRoute) {
                                 Icon(
-                                    imageVector = Icons.Default.Logout,
-                                    contentDescription = "Logout",
+                                    imageVector = Icons.Default.ArrowBack,
+                                    contentDescription = "Back",
                                     tint = Color.White
                                 )
+                            } else {
+                                // Home icon with square box
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .background(
+                                            color = Color.White.copy(alpha = 0f),
+                                            shape = RoundedCornerShape(2.dp)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Home,
+                                        contentDescription = "Home",
+                                        tint = Color.White
+                                    )
+                                }
                             }
                         }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color(0xFFEF3636)
-                    )
-                )
-            },
-            contentWindowInsets = WindowInsets(0, 0, 0, 0)
-        ) { paddingValues ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.White)
-                    .padding(paddingValues)
-            ) {
-                NavHost(
-                    navController = navController,
-                    startDestination = HamburgerScreen.Dashboard.route
-                ) {
-                    composable(HamburgerScreen.Dashboard.route) {
-                        DashboardScreen(onNavigate = ::navigateToScreen)
                     }
-
-                    composable(HamburgerScreen.StockList.route) {
-                        StockListScreenContainer(navController = navController)
-                    }
-
-                    composable("stockDetail") {
-                        val item = navController.previousBackStackEntry
-                            ?.savedStateHandle
-                            ?.get<com.example.intern_stockmate.model.StockItem>("selectedStockItem")
-                        if (item != null) {
-                            StockDetailScreen(item = item)
+                },
+                actions = {
+                    if (isDashboardRoute) {
+                        IconButton(onClick = onLogout) {
+                            Icon(
+                                imageVector = Icons.Default.Logout,
+                                contentDescription = "Logout",
+                                tint = Color.White
+                            )
                         }
                     }
-
-                    composable(HamburgerScreen.StockAdjustment.route) {
-                        StockAdjustmentScreen(navController = navController, stockViewModel = stockAdjustmentViewModel)
-                    }
-
-                    composable("adjustmentDetails") {
-                        AdjustmentItemsScreen(
-                            navController = navController,
-                            stockViewModel = stockViewModel,
-                            stockAdjustmentViewModel = stockAdjustmentViewModel
-                        )
-                    }
-
-                    composable(HamburgerScreen.SalesOrder.route) {
-                        SalesOrderScreen(
-                            navController = navController,
-                            salesOrderViewModel = salesOrderViewModel
-                        )
-                    }
-
-                    composable("salesOrderDetails") {
-                        SalesOrderDetailsScreen(
-                            navController = navController,
-                            stockViewModel = stockViewModel,
-                            salesOrderViewModel = salesOrderViewModel
-                        )
-                    }
-
-                    composable(HamburgerScreen.SalesOverview.route) {
-                        SalesOverviewScreenContainer()
-                    }
-
-
-                    composable(HamburgerScreen.HourlySales.route) {
-                        HourlySalesScreenContainer()
-                    }
-
-                    composable(HamburgerScreen.DailySales.route) {
-                        DailySalesScreenContainer()
-                    }
-
-                    composable(HamburgerScreen.MonthlySales.route) {
-                        MonthlySalesScreenContainer()
-                    }
-
-                    composable(HamburgerScreen.Rank.route) {
-                        SalesRankScreenContainer()
-                    }
-
-                    composable(HamburgerScreen.Items.route) {
-                        ItemInfoScreenContainer()
-                    }
-
-                    composable(HamburgerScreen.Members.route) {
-                        MemberInfoScreenContainer()
-                    }
-
-                    composable(HamburgerScreen.Debtor.route) {
-                        DebtorInfoScreenContainer()
-                    }
-
-                    composable(HamburgerScreen.Creditor.route) {
-                        CreditorInfoScreenContainer()
-                    }
-
-                    composable(HamburgerScreen.Config.route) {
-                        ConfigScreen(
-                            innerPadding = PaddingValues(0.dp),
-                            loginViewModel = loginViewModel,
-                            scope = scope
-                        )
-                    }
-
-
-                    composable(HamburgerScreen.Contact.route) {
-                        ContactScreen()
-                    }
-
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFFEF3636)
+                )
+            )
+        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White)
+                .padding(paddingValues)
+        ) {
+            NavHost(
+                navController = navController,
+                startDestination = HamburgerScreen.Dashboard.route
+            ) {
+                composable(HamburgerScreen.Dashboard.route) {
+                    DashboardScreen(onNavigate = ::navigateToScreen)
                 }
+
+                composable(HamburgerScreen.StockList.route) {
+                    StockListScreenContainer(navController = navController)
+                }
+
+                composable("stockDetail") {
+                    val item = navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.get<com.example.intern_stockmate.model.StockItem>("selectedStockItem")
+                    if (item != null) {
+                        StockDetailScreen(item = item)
+                    }
+                }
+
+                composable(HamburgerScreen.StockAdjustment.route) {
+                    StockAdjustmentScreen(navController = navController, stockViewModel = stockAdjustmentViewModel)
+                }
+
+                composable("adjustmentDetails") {
+                    AdjustmentItemsScreen(
+                        navController = navController,
+                        stockViewModel = stockViewModel,
+                        stockAdjustmentViewModel = stockAdjustmentViewModel
+                    )
+                }
+
+                composable(HamburgerScreen.SalesOrder.route) {
+                    SalesOrderScreen(
+                        navController = navController,
+                        salesOrderViewModel = salesOrderViewModel
+                    )
+                }
+
+                composable("salesOrderDetails") {
+                    SalesOrderDetailsScreen(
+                        navController = navController,
+                        stockViewModel = stockViewModel,
+                        salesOrderViewModel = salesOrderViewModel
+                    )
+                }
+
+                composable(HamburgerScreen.SalesOverview.route) {
+                    SalesOverviewScreenContainer()
+                }
+
+
+                composable(HamburgerScreen.HourlySales.route) {
+                    HourlySalesScreenContainer()
+                }
+
+                composable(HamburgerScreen.DailySales.route) {
+                    DailySalesScreenContainer()
+                }
+
+                composable(HamburgerScreen.MonthlySales.route) {
+                    MonthlySalesScreenContainer()
+                }
+
+                composable(HamburgerScreen.Rank.route) {
+                    SalesRankScreenContainer()
+                }
+
+                composable(HamburgerScreen.Items.route) {
+                    ItemInfoScreenContainer()
+                }
+
+                composable(HamburgerScreen.Members.route) {
+                    MemberInfoScreenContainer()
+                }
+
+                composable(HamburgerScreen.Debtor.route) {
+                    DebtorInfoScreenContainer()
+                }
+
+                composable(HamburgerScreen.Creditor.route) {
+                    CreditorInfoScreenContainer()
+                }
+
+                composable(HamburgerScreen.Config.route) {
+                    ConfigScreen(
+                        innerPadding = PaddingValues(0.dp),
+                        loginViewModel = loginViewModel,
+                        scope = scope
+                    )
+                }
+
+
+                composable(HamburgerScreen.Contact.route) {
+                    ContactScreen()
+                }
+
             }
         }
     }
 }
+
+
+
