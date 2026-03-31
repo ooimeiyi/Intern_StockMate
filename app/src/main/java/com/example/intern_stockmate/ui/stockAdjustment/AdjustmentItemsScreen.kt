@@ -101,7 +101,6 @@ fun AdjustmentItemsScreen(
     val physicalCounts = stockAdjustmentViewModel.physicalCounts
     val diffCounts = stockAdjustmentViewModel.diffCounts
     val selectedHeader by stockAdjustmentViewModel.selectedHeader.collectAsState()
-    val isEditMode by stockAdjustmentViewModel.isEditMode.collectAsState()
 
     val searchQuery by stockViewModel.searchQuery.collectAsState()
     var localQuery by remember { mutableStateOf(searchQuery) }
@@ -247,23 +246,12 @@ fun AdjustmentItemsScreen(
                                 readOnly = true
                             )
                             Box(modifier = Modifier.weight(0.8f)) {
-                                if (isEditMode) {
-                                    AdjustmentInputField(
-                                        label = "Location",
-                                        value = selectedLocation,
-                                        onValueChange = {},
-                                        placeholder = "-",
-                                        modifier = Modifier.fillMaxWidth(),
-                                        readOnly = true
-                                    )
-                                } else {
-                                    DropdownLocation(
-                                        label = "Location",
-                                        selected = selectedLocation,
-                                        options = locations,
-                                        onSelect = { stockViewModel.onLocationSelected(it) }
-                                    )
-                                }
+                                DropdownLocation(
+                                    label = "Location",
+                                    selected = selectedLocation,
+                                    options = locations,
+                                    onSelect = { stockViewModel.onLocationSelected(it) }
+                                )
                             }
                         }
                     }
