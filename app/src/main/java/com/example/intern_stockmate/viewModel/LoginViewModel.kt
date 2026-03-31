@@ -14,12 +14,12 @@ class LoginViewModel(
     private val credentialDao: UserCredentialDao
 ) : ViewModel() {
 
-    // Make credentials mutable
     private val defaultUserId = "Admin"
+    private val defaultPassword = "Admin"
+    private val resetAdminPasswordCode = "shlsoftware123456"
     private var userId by mutableStateOf(defaultUserId)
-    private var password by mutableStateOf("Admin")
+    private var password by mutableStateOf(defaultPassword)
 
-    // User input
     var inputUserId by mutableStateOf("")
         private set
     var inputPassword by mutableStateOf("")
@@ -39,11 +39,9 @@ class LoginViewModel(
         }
     }
 
-    // Login attempt status
     var loginError by mutableStateOf(false)
         private set
 
-    // Hide password
     var isPasswordVisible by mutableStateOf(false)
         private set
 
@@ -67,11 +65,9 @@ class LoginViewModel(
         loginError = false
     }
 
-    // Login button enabled when fields not empty
     val isLoginEnabled: Boolean
         get() = inputUserId.isNotBlank() && inputPassword.isNotBlank()
 
-    // Attempt login
     fun attemptLogin(): Boolean {
         return if (inputUserId == userId && inputPassword == password) {
             loginError = false
@@ -84,9 +80,8 @@ class LoginViewModel(
 
     suspend fun changePassword(oldPassword: String, newPassword: String): Result<Unit> {
         if (oldPassword.isBlank() && newPassword.isBlank()) {
-            return Result.failure(IllegalArgumentException("Please enter old and new password"))
+            return Result.failure(IllegalArgumentException("Please enter both old and new password"))
         }
-
         if (oldPassword != password) {
             return Result.failure(IllegalArgumentException("Old password is incorrect"))
         }
@@ -96,10 +91,23 @@ class LoginViewModel(
         if(oldPassword==newPassword){
             return Result.failure(IllegalArgumentException("New password cannot be the same as old password"))
         }
-
         password = newPassword
         credentialDao.upsertCredential(
             UserCredentialEntity(userId = userId, password = newPassword)
+        )
+        return Result.success(Unit)
+    }
+
+    suspend fun resetAdminPassword(resetCode: String): Result<Unit> {
+        if (resetCode.isBlank()) {
+            return Result.failure(IllegalArgumentException("Please enter reset password"))
+        }
+        if (resetCode != resetAdminPasswordCode) {
+            return Result.failure(IllegalArgumentException("Reset password is incorrect"))
+        }
+        password = defaultPassword
+        credentialDao.upsertCredential(
+            UserCredentialEntity(userId = defaultUserId, password = defaultPassword)
         )
         return Result.success(Unit)
     }

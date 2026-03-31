@@ -58,9 +58,12 @@ fun ConfigScreen(
 ) {
     var oldPassword by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
+    var resetCode by remember { mutableStateOf("") }
     var oldPasswordVisible by remember { mutableStateOf(false) }
     var newPasswordVisible by remember { mutableStateOf(false) }
+    var resetCodeVisible by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
+    var resetStatusMessage by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
@@ -99,7 +102,8 @@ fun ConfigScreen(
                         )
                     }
                 },
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(8.dp),
+                singleLine = true
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -119,7 +123,8 @@ fun ConfigScreen(
                         )
                     }
                 },
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(8.dp),
+                singleLine = true
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -157,6 +162,73 @@ fun ConfigScreen(
             }
 
             statusMessage?.let {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = it,
+                    color = Color.Red,
+                    fontSize = 12.sp,
+                    modifier = Modifier
+                        .padding(top = 12.dp)
+                        .align(Alignment.CenterHorizontally)
+                )
+            }
+        }
+
+        ManagementCard(title = "Reset Admin Password", icon = Icons.Default.Lock) {
+            OutlinedTextField(
+                value = resetCode,
+                onValueChange = { resetCode = it },
+                placeholder = { Text("Enter reset Password") },
+                modifier = Modifier.fillMaxWidth(),
+                visualTransformation = if (resetCodeVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                colors = textFieldColors,
+                trailingIcon = {
+                    IconButton(onClick = { resetCodeVisible = !resetCodeVisible }) {
+                        Icon(
+                            imageVector = if (resetCodeVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = null
+                        )
+                    }
+                },
+                shape = RoundedCornerShape(8.dp),
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = {
+                    scope.launch {
+                        val result = loginViewModel.resetAdminPassword(resetCode)
+                        if (result.isSuccess) {
+                            Toast.makeText(
+                                context,
+                                "Admin Password Reset to 'Admin'.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            resetCode = ""
+                            resetStatusMessage = null
+                        } else {
+                            resetStatusMessage = result.exceptionOrNull()?.message
+                                ?: "Unable to Reset password"
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+            ) {
+                Text(
+                    text = "Reset Password",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+
+            resetStatusMessage?.let {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = it,
