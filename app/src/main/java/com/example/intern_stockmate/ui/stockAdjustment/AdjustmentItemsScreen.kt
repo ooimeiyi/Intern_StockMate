@@ -34,6 +34,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
@@ -61,6 +62,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -78,9 +80,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
 import com.example.intern_stockmate.model.StockItem
 import com.example.intern_stockmate.scanner.QRCodeScanner
+import com.example.intern_stockmate.ui.stockLIst.StockItemRow
 import com.example.intern_stockmate.viewModel.StockAdjustmentViewModel
 import com.example.intern_stockmate.viewModel.StockViewModel
 import java.text.SimpleDateFormat
@@ -105,6 +109,7 @@ fun AdjustmentItemsScreen(
     val selectedLocation by stockViewModel.selectedLocation.collectAsState()
     val locations by stockAdjustmentViewModel.locations.collectAsState(initial = emptyList())
     val filteredItems by stockViewModel.filteredItems.collectAsState()
+    val allItems by stockViewModel.allItems.collectAsState()
 
     var description by remember(selectedHeader) { mutableStateOf(selectedHeader?.description ?: "") }
     var stockTakeNo by remember(selectedHeader) { mutableStateOf(selectedHeader?.stockTakeNo ?: "") }
@@ -115,6 +120,11 @@ fun AdjustmentItemsScreen(
 
     val context = LocalContext.current
     var scanning by remember { mutableStateOf(false) }
+
+    var showStockPicker by remember { mutableStateOf(false) }
+    var stockPickerQuery by remember { mutableStateOf("") }
+    val manuallySelectedCodes = remember { mutableStateListOf<String>() }
+    var pickerSelectedCode by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(locations, selectedLocation, selectedHeader) {
         if (selectedHeader == null && locations.isNotEmpty() && selectedLocation.isBlank()) {
@@ -259,7 +269,7 @@ fun AdjustmentItemsScreen(
                         value = localQuery,
                         onValueChange = { localQuery = it },
                         placeholder = {
-                            Text("Enter Item Code or Barcode...", color = Color.Gray, fontSize = 14.sp)
+                            Text("Enter Item Code or...", color = Color.Gray, fontSize = 14.sp)
                         },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
@@ -267,18 +277,28 @@ fun AdjustmentItemsScreen(
                         colors = textFieldColors,
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
                         trailingIcon = {
-                            IconButton(onClick = { cameraPermissionLauncher.launch(Manifest.permission.CAMERA) }) {
-                                Icon(
-                                    imageVector = Icons.Default.QrCodeScanner,
-                                    contentDescription = "Scan",
-                                    tint = Color.Red
-                                )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(onClick = { showStockPicker = true }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Inventory2,
+                                        contentDescription = "Show stock list",
+                                        tint = Color.Red
+                                    )
+                                }
+                                IconButton(onClick = { cameraPermissionLauncher.launch(Manifest.permission.CAMERA) }) {
+                                    Icon(
+                                        imageVector = Icons.Default.QrCodeScanner,
+                                        contentDescription = "Scan",
+                                        tint = Color.Red
+                                    )
+                                }
                             }
                         },
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(
                             onSearch = {
                                 val query = localQuery.trim()
+                                pickerSelectedCode = null
                                 stockViewModel.onSearchQueryChange(query)
                                 localQuery = ""
                             }
@@ -288,6 +308,7 @@ fun AdjustmentItemsScreen(
                     Button(
                         onClick = {
                             val query = localQuery.trim()
+                            pickerSelectedCode = null
                             stockViewModel.onSearchQueryChange(query)
                             localQuery = ""
                         },
@@ -313,8 +334,8 @@ fun AdjustmentItemsScreen(
                 val itemsToShow = if (isSearching) {
                     filteredItems
                 } else {
-                    val adjustedKeys = physicalCounts.keys
-                    stockViewModel.allItems.value.filter { adjustedKeys.contains(it.itemCode) }
+                    val selectedCodes = physicalCounts.keys + manuallySelectedCodes
+                    allItems.filter { selectedCodes.contains(it.itemCode) }
                 }
 
                 if (!isSearching && itemsToShow.isEmpty()) {
@@ -350,6 +371,97 @@ fun AdjustmentItemsScreen(
             },
             onScanFinished = { scanning = false }
         )
+    }
+
+    if (showStockPicker) {
+        val pickerItems = allItems.filter {
+            val query = stockPickerQuery.trim()
+            val matchesLocation = selectedLocation.isBlank() ||
+                    it.locationList.any { locationInfo -> locationInfo.location == selectedLocation }
+            val matchesQuery = query.isBlank() ||
+                    it.itemCode.contains(query, ignoreCase = true) ||
+                    it.description.contains(query, ignoreCase = true) ||
+                    it.desc2.orEmpty().contains(query, ignoreCase = true)
+            matchesLocation && matchesQuery
+        }
+
+        Dialog(onDismissRequest = { showStockPicker = false }) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(550.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Select Stock Item",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(pickerItems) { pickerItem ->
+                            FilterItemRow(item = pickerItem) {
+                                manuallySelectedCodes.add(pickerItem.itemCode)
+                                if (!physicalCounts.containsKey(pickerItem.itemCode)) {
+                                    physicalCounts[pickerItem.itemCode] = ""
+
+                                    diffCounts[pickerItem.itemCode] = 0
+                                }
+                                stockViewModel.onSearchQueryChange("")
+                                localQuery = ""
+                                showStockPicker = false
+                                stockPickerQuery = ""
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun FilterItemRow(item: StockItem, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(0.5.dp, Color.LightGray)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(item.itemCode, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                Text(
+                    text = item.description,
+                    fontSize = 14.sp,
+                    color = Color.Gray,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = item.desc2.orEmpty(),
+                    fontSize = 14.sp,
+                    color = Color.Gray,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
     }
 }
 
