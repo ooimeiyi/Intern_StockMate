@@ -8,8 +8,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.time.YearMonth
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 class DailySalesViewModel(
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()

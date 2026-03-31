@@ -58,11 +58,4 @@ class LoginViewModel : ViewModel() {
             false
         }
     }
-
-    // FUNCTION TO UPDATE PASSWORD
-    fun updatePassword(newPassword: String) {
-        password = newPassword
-    }
-
-    fun getCurrentUser(): String = userId
 }
