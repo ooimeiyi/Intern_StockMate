@@ -27,7 +27,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import com.example.intern_stockmate.R
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.navigation.NavController
 import com.example.intern_stockmate.viewModel.LoginViewModel
 
 @Composable
