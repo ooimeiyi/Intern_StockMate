@@ -141,9 +141,9 @@ fun ConfigScreen(
                             Toast.makeText(context, "Password changed.", Toast.LENGTH_SHORT).show()
                             oldPassword = ""
                             newPassword = ""
-                            statusMessage = null
                         } else {
-                            statusMessage = result.exceptionOrNull()?.message ?: "Unable to change password"
+                            val errorMsg = result.exceptionOrNull()?.message ?: "Unable to change password"
+                            Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
                         }
                     }
                 },
@@ -201,16 +201,12 @@ fun ConfigScreen(
                     scope.launch {
                         val result = loginViewModel.resetAdminPassword(resetCode)
                         if (result.isSuccess) {
-                            Toast.makeText(
-                                context,
-                                "Admin Password Reset to 'Admin'.",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            Toast.makeText(context, "Admin Password Reset to 'Admin'.", Toast.LENGTH_SHORT).show()
                             resetCode = ""
                             resetStatusMessage = null
                         } else {
-                            resetStatusMessage = result.exceptionOrNull()?.message
-                                ?: "Unable to Reset password"
+                            val errorMsg = result.exceptionOrNull()?.message ?: "Unable to Reset password"
+                            Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
                         }
                     }
                 },

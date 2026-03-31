@@ -80,7 +80,7 @@ class LoginViewModel(
 
     suspend fun changePassword(oldPassword: String, newPassword: String): Result<Unit> {
         if (oldPassword.isBlank() && newPassword.isBlank()) {
-            return Result.failure(IllegalArgumentException("Please enter both old and new password"))
+            return Result.failure(IllegalArgumentException("Please enter old and new password"))
         }
         if (oldPassword != password) {
             return Result.failure(IllegalArgumentException("Old password is incorrect"))

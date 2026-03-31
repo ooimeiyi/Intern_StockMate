@@ -26,13 +26,17 @@ import androidx.compose.material3.IconButton
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import com.example.intern_stockmate.R
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.text.input.VisualTransformation
 import com.example.intern_stockmate.viewModel.LoginViewModel
 
 @Composable
 fun LogInScreen(
     loginViewModel: LoginViewModel,
-    onLoginSuccess: () -> Unit
+    onLoginSuccess: () -> Unit,
+    onSettingsClick: () -> Unit
 ) {
     val textFieldColors = OutlinedTextFieldDefaults.colors(
         focusedTextColor = Color.Black,
@@ -40,11 +44,27 @@ fun LogInScreen(
         cursorColor = Color.Black
     )
 
+    val context = LocalContext.current
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFFFFFFF))
     ) {
+
+        IconButton(
+            onClick = onSettingsClick,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 50.dp, end = 15.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Settings,
+                contentDescription = "Open configuration",
+                tint = Color(0xFFE11747),
+                modifier = Modifier.size(30.dp)
+            )
+        }
 
         Column(
             modifier = Modifier
@@ -56,21 +76,18 @@ fun LogInScreen(
             Image(
                 painter = painterResource(id = R.drawable.stock_mate_logo),
                 contentDescription = "Logo",
-                modifier = Modifier.size(150.dp)
+                modifier = Modifier.size(120.dp)
             )
+            Spacer(modifier = Modifier.height(8.dp))
+
             Text(
-                text = "Welcome Back",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1A1C1E)
+                text = "Stock Mate",
+                fontSize = 35.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.Red
             )
-            Text(
-                text = "Sign in to StockMate",
-                fontSize = 14.sp,
-                color = Color.Gray,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-            Spacer(modifier = Modifier.height(32.dp))
+
+            Spacer(modifier = Modifier.height(20.dp))
 
             Card(
                 modifier = Modifier
@@ -137,12 +154,9 @@ fun LogInScreen(
                     Spacer(modifier = Modifier.height(10.dp))
 
                     if (loginViewModel.loginError) {
-                        Text(
-                            text = "Incorrect Username or Password",
-                            color = Color.Red,
-                            fontSize = 12.sp,
-                            modifier = Modifier.padding(top = 12.dp).align(Alignment.CenterHorizontally)
-                        )
+                        LaunchedEffect(loginViewModel.loginError) {
+                            Toast.makeText(context, "Incorrect Username or Password", Toast.LENGTH_SHORT).show()
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(10.dp))
