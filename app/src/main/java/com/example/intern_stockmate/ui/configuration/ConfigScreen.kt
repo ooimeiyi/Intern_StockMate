@@ -151,7 +151,7 @@ fun ConfigScreen(
                     .fillMaxWidth()
                     .height(50.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF3636))
             ) {
                 Text(
                     text = "Update Password",
@@ -214,7 +214,7 @@ fun ConfigScreen(
                     .fillMaxWidth()
                     .height(50.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF3636))
             ) {
                 Text(
                     text = "Reset Password",

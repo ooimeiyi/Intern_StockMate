@@ -61,7 +61,7 @@ fun LogInScreen(
             Icon(
                 imageVector = Icons.Default.Settings,
                 contentDescription = "Open configuration",
-                tint = Color(0xFFE11747),
+                tint = Color(0xFFEF3636),
                 modifier = Modifier.size(30.dp)
             )
         }
@@ -84,7 +84,7 @@ fun LogInScreen(
                 text = "Stock Mate",
                 fontSize = 35.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = Color.Red
+                color = Color(0xFFEF3636)
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -175,7 +175,7 @@ fun LogInScreen(
                             .fillMaxWidth()
                             .height(56.dp),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF3636))
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Login, contentDescription = null, tint = Color.White)

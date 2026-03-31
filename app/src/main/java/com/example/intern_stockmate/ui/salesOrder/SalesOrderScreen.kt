@@ -58,7 +58,7 @@ fun SalesOrderScreen(
                         navController.navigate("salesOrderDetails")
                     }
                 },
-                containerColor = Color.Red,
+                containerColor = Color(0xFFEF3636),
                 contentColor = Color.White
             ) {
                 Icon(Icons.Default.Add, contentDescription = "New sales order")

@@ -80,7 +80,7 @@ fun StockMateScreen() {
                                     }
                                 },
                                 colors = TopAppBarDefaults.topAppBarColors(
-                                    containerColor = Color.Red
+                                    containerColor = Color(0xFFEF3636)
                                 )
                             )
                         }

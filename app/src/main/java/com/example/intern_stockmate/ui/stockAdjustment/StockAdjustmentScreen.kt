@@ -58,7 +58,7 @@ fun StockAdjustmentScreen(
                         navController.navigate("adjustmentDetails")
                     }
                 },
-                containerColor = Color.Red,
+                containerColor = Color(0xFFEF3636),
                 contentColor = Color.White
             ) {
                 Icon(Icons.Default.Add, contentDescription = "New stock take")

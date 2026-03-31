@@ -54,12 +54,11 @@ fun ContactScreen() {
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Red Header Card
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(160.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.Red),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFEF3636)),
                 shape = RoundedCornerShape(12.dp),
                 elevation = CardDefaults.cardElevation(4.dp)
             ) {

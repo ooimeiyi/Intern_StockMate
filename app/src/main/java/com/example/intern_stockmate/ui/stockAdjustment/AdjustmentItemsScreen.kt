@@ -157,7 +157,7 @@ fun AdjustmentItemsScreen(
                         date = formatter.format(Date(selectedDate))
                     }
                     showDatePicker = false
-                }) { Text("OK", color = Color.Red) }
+                }) { Text("OK", color = Color(0xFFEF3636)) }
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
@@ -279,14 +279,14 @@ fun AdjustmentItemsScreen(
                                     Icon(
                                         imageVector = Icons.Default.Inventory2,
                                         contentDescription = "Show stock list",
-                                        tint = Color.Red
+                                        tint = Color(0xFFEF3636)
                                     )
                                 }
                                 IconButton(onClick = { cameraPermissionLauncher.launch(Manifest.permission.CAMERA) }) {
                                     Icon(
                                         imageVector = Icons.Default.QrCodeScanner,
                                         contentDescription = "Scan",
-                                        tint = Color.Red
+                                        tint = Color(0xFFEF3636)
                                     )
                                 }
                             }
@@ -312,7 +312,7 @@ fun AdjustmentItemsScreen(
                             .fillMaxWidth()
                             .height(45.dp),
                         shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF3636))
                     ) {
                         Text("Search Item", color = Color.White)
                     }
@@ -575,7 +575,7 @@ fun AdjustmentBottomBar(
                 .weight(1.6f)
                 .height(50.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF3636))
         ) {
             Text("Submit Adjustment", color = Color.White, fontSize = 14.sp)
         }

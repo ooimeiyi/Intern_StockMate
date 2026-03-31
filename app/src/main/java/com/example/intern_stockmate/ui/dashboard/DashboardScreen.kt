@@ -155,7 +155,7 @@ fun DashboardCard(
         modifier = Modifier
             .padding(8.dp)
             .fillMaxWidth()
-            .aspectRatio(1.1f) // Makes it slightly rectangular/square
+            .aspectRatio(1.1f)
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -169,16 +169,15 @@ fun DashboardCard(
             Icon(
                 imageVector = icon,
                 contentDescription = title,
-                tint = Color(0xFFD32F2F), // The StockMate Red
+                tint = Color(0xFFEF3636),
                 modifier = Modifier.size(40.dp)
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = title,
                 style = TextStyle(
-                    fontStyle = FontStyle.Italic,
-                    fontSize = 14.sp,
-                    color = Color.DarkGray
+                    fontSize = 15.sp,
+                    color = Color.Black
                 )
             )
         }
@@ -196,15 +195,14 @@ fun SectionHeader(title: String) {
             modifier = Modifier
                 .width(4.dp)
                 .height(24.dp)
-                .background(Color(0xFFD32F2F), shape = RoundedCornerShape(2.dp))
+                .background(Color(0xFFEF3636), shape = RoundedCornerShape(2.dp))
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = title,
             style = TextStyle(
-                fontStyle = FontStyle.Italic,
                 fontWeight = FontWeight.ExtraBold,
-                fontSize = 18.sp,
+                fontSize = 20.sp,
                 color = Color.Black
             )
         )

@@ -201,7 +201,7 @@ fun StockListScreen(
                 onClick = { cameraPermissionLauncher.launch(Manifest.permission.CAMERA) },
                 modifier = Modifier.size(56.dp),
                 shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF3636)),
                 contentPadding = PaddingValues(0.dp)
             ) {
                 Icon(Icons.Default.QrCodeScanner, contentDescription = "Scan", tint = Color.White, modifier = Modifier.size(28.dp))

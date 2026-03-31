@@ -160,7 +160,7 @@ fun SalesOrderDetailsScreen(
                         date = formatter.format(Date(selectedDate))
                     }
                     showDatePicker = false
-                }) { Text("OK", color = Color.Red) }
+                }) { Text("OK", color = Color(0xFFEF3636)) }
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
@@ -218,7 +218,7 @@ fun SalesOrderDetailsScreen(
                         .weight(1f)
                         .height(45.dp),
                     shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF3636))
                 ) {
                     Icon(Icons.Default.Save, contentDescription = null, tint = Color.White)
                     Spacer(modifier = Modifier.width(8.dp))
@@ -327,14 +327,14 @@ fun SalesOrderDetailsScreen(
                                     Icon(
                                         imageVector = Icons.Default.Inventory2,
                                         contentDescription = "Select item",
-                                        tint = Color.Red
+                                        tint = Color(0xFFEF3636)
                                     )
                                 }
                                 IconButton(onClick = { cameraPermissionLauncher.launch(Manifest.permission.CAMERA) }) {
                                     Icon(
                                         imageVector = Icons.Default.QrCodeScanner,
                                         contentDescription = "Scan",
-                                        tint = Color.Red
+                                        tint = Color(0xFFEF3636)
                                     )
                                 }
                             }
@@ -361,7 +361,7 @@ fun SalesOrderDetailsScreen(
                             .fillMaxWidth()
                             .height(45.dp),
                         shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF3636))
                     ) {
                         Text("Search Item", color = Color.White)
                     }

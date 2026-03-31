@@ -237,7 +237,7 @@ private fun TotalSalesCard(totalSales: Double, lastUpdate: String, tabTitle: Str
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Red)
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFEF3636))
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
