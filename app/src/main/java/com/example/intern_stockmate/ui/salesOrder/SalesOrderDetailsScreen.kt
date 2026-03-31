@@ -32,6 +32,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
@@ -57,6 +58,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -74,6 +76,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
 import com.example.intern_stockmate.model.StockItem
 import com.example.intern_stockmate.scanner.QRCodeScanner
@@ -100,6 +103,7 @@ fun SalesOrderDetailsScreen(
     val locations by salesOrderViewModel.locations.collectAsState(initial = emptyList())
     val debtors by salesOrderViewModel.debtors.collectAsState(initial = emptyList())
     val filteredItems by stockViewModel.filteredItems.collectAsState()
+    val allItems by stockViewModel.allItems.collectAsState()
 
     var debtor by remember(selectedHeader) { mutableStateOf(selectedHeader?.debtor ?: "") }
     var soNo by remember(selectedHeader) { mutableStateOf(selectedHeader?.soNo ?: "") }
@@ -110,6 +114,13 @@ fun SalesOrderDetailsScreen(
 
     val context = LocalContext.current
     var scanning by remember { mutableStateOf(false) }
+
+    var showStockPicker by remember { mutableStateOf(false) }
+    var stockPickerQuery by remember { mutableStateOf("") }
+    val manuallySelectedCodes = remember { mutableStateListOf<String>() }
+    val sessionTrackedCodes = remember { mutableStateListOf<String>() }
+    var pickerSelectedCode by remember { mutableStateOf<String?>(null) }
+
 
     LaunchedEffect(locations, selectedLocation) {
         if (locations.isNotEmpty() && selectedLocation.isBlank()) {
@@ -305,7 +316,7 @@ fun SalesOrderDetailsScreen(
                         value = localQuery,
                         onValueChange = { localQuery = it },
                         placeholder = {
-                            Text("Enter Item Code or Barcode...", color = Color.Gray, fontSize = 14.sp)
+                            Text("Enter Item Code...", color = Color.Gray, fontSize = 14.sp)
                         },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
@@ -313,18 +324,28 @@ fun SalesOrderDetailsScreen(
                         colors = textFieldColors,
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
                         trailingIcon = {
-                            IconButton(onClick = { cameraPermissionLauncher.launch(Manifest.permission.CAMERA) }) {
-                                Icon(
-                                    imageVector = Icons.Default.QrCodeScanner,
-                                    contentDescription = "Scan",
-                                    tint = Color.Red
-                                )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(onClick = { showStockPicker = true }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Inventory2,
+                                        contentDescription = "Select item",
+                                        tint = Color.Red
+                                    )
+                                }
+                                IconButton(onClick = { cameraPermissionLauncher.launch(Manifest.permission.CAMERA) }) {
+                                    Icon(
+                                        imageVector = Icons.Default.QrCodeScanner,
+                                        contentDescription = "Scan",
+                                        tint = Color.Red
+                                    )
+                                }
                             }
                         },
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(
                             onSearch = {
                                 val query = localQuery.trim()
+                                pickerSelectedCode = null
                                 stockViewModel.onSearchQueryChange(query)
                                 localQuery = ""
                             }
@@ -334,6 +355,7 @@ fun SalesOrderDetailsScreen(
                     Button(
                         onClick = {
                             val query = localQuery.trim()
+                            pickerSelectedCode = null
                             stockViewModel.onSearchQueryChange(query)
                             localQuery = ""
                         },
@@ -349,43 +371,61 @@ fun SalesOrderDetailsScreen(
             }
 
             val isSearching = searchQuery.isNotBlank()
+
+            val pinnedItems = allItems.filter { stockItem ->
+                val hasSelectedQty = salesOrderViewModel.selectedItems[stockItem.itemCode]
+                    ?.qty
+                    .orEmpty()
+                    .isNotBlank()
+                val isSessionTracked = sessionTrackedCodes.contains(stockItem.itemCode) ||
+                        manuallySelectedCodes.contains(stockItem.itemCode)
+                hasSelectedQty || isSessionTracked
+            }
+            val searchedItems = if (isSearching) filteredItems else emptyList()
+            val itemsToShow = if (isSearching) {
+                (pinnedItems + searchedItems).distinctBy { it.itemCode }
+            } else {
+                pinnedItems
+            }
+
             if (isSearching && isInvalidSearch) {
                 item {
-                    Box(modifier = Modifier.fillMaxWidth().padding(top = 20.dp), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Text("No matching item found. Please try again", color = Color.Red)
                     }
                 }
-            } else {
-                val itemsToShow = if (isSearching) {
-                    filteredItems
-                } else {
-                    val selectedItemCodes = salesOrderViewModel.selectedItems.keys
-                    stockViewModel.allItems.value.filter { selectedItemCodes.contains(it.itemCode) }
-                }
+            }
 
-                if (!isSearching && itemsToShow.isEmpty()) {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 20.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "Search item to add sales order",
-                                color = Color.Gray
-                            )
-                        }
+            if (!isSearching && itemsToShow.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 20.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Search item to add sales order",
+                            color = Color.Gray
+                        )
                     }
                 }
+            }
 
-                items(itemsToShow) { item ->
-                    SalesOrderItemRow(
-                        item = item,
-                        selectedLocation = selectedLocation,
-                        salesOrderViewModel = salesOrderViewModel
-                    )
-                }
+            items(itemsToShow) { item ->
+                SalesOrderItemRow(
+                    item = item,
+                    selectedLocation = selectedLocation,
+                    salesOrderViewModel = salesOrderViewModel,
+                    onTrackItemInSession = { itemCode ->
+                        if (!sessionTrackedCodes.contains(itemCode)) {
+                            sessionTrackedCodes.add(itemCode)
+                        }
+                    }
+                )
             }
         }
     }
@@ -397,13 +437,126 @@ fun SalesOrderDetailsScreen(
             onScanFinished = { scanning = false }
         )
     }
+
+    if (showStockPicker) {
+        val pickerItems = allItems.filter {
+            val query = stockPickerQuery.trim()
+            val matchesLocation = selectedLocation.isBlank() ||
+                    it.locationList.any { locationInfo -> locationInfo.location == selectedLocation }
+            val matchesQuery = query.isBlank() ||
+                    it.itemCode.contains(query, ignoreCase = true) ||
+                    it.description.contains(query, ignoreCase = true) ||
+                    it.desc2.orEmpty().contains(query, ignoreCase = true)
+            matchesLocation && matchesQuery
+        }
+
+        Dialog(onDismissRequest = { showStockPicker = false }) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(550.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Select Sales Item",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(pickerItems) { pickerItem ->
+                            SalesOrderFilterItemRow(
+                                item = pickerItem,
+                                isSelected = pickerSelectedCode == pickerItem.itemCode
+                            ) {
+                                val defaultUom = pickerItem.uomList.firstOrNull()?.uom ?: pickerItem.uom
+                                val defaultPrice = pickerItem.uomList.firstOrNull()?.price1 ?: pickerItem.price
+                                pickerSelectedCode = pickerItem.itemCode
+                                if (!manuallySelectedCodes.contains(pickerItem.itemCode)) {
+                                    manuallySelectedCodes.add(pickerItem.itemCode)
+                                }
+                                if (!sessionTrackedCodes.contains(pickerItem.itemCode)) {
+                                    sessionTrackedCodes.add(pickerItem.itemCode)
+                                }
+                                salesOrderViewModel.updateSelectedItem(
+                                    itemCode = pickerItem.itemCode,
+                                    qty = "",
+                                    uom = defaultUom,
+                                    unitPrice = defaultPrice
+                                )
+                                stockViewModel.onSearchQueryChange("")
+                                localQuery = ""
+                                stockPickerQuery = ""
+                                showStockPicker = false
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SalesOrderFilterItemRow(
+    item: StockItem,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(0.5.dp, if (isSelected) Color.Red else Color.LightGray)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = item.itemCode,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+                Text(
+                    text = item.description,
+                    color = Color.DarkGray,
+                    fontSize = 13.sp
+                )
+                Text(
+                    text = item.desc2.orEmpty(),
+                    fontSize = 14.sp,
+                    color = Color.Gray,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
 }
 
 @Composable
 private fun SalesOrderItemRow(
     item: StockItem,
     selectedLocation: String,
-    salesOrderViewModel: SalesOrderViewModel
+    salesOrderViewModel: SalesOrderViewModel,
+    onTrackItemInSession: (String) -> Unit
 ) {
     var selectedUom by remember { mutableStateOf(item.uomList.firstOrNull()?.uom ?: item.uom) }
     var qtyInput by remember { mutableStateOf("") }
@@ -464,6 +617,7 @@ private fun SalesOrderItemRow(
                         val uomInfo = item.uomList.find { it.uom == newUom }
                         val newPrice = uomInfo?.price1 ?: item.price
                         unitPriceInput = "%.2f".format(newPrice)
+                        onTrackItemInSession(item.itemCode)
                         salesOrderViewModel.updateSelectedItem(
                             itemCode = item.itemCode,
                             qty = qtyInput,
@@ -478,6 +632,7 @@ private fun SalesOrderItemRow(
                     onValueChange = { input ->
                         if (input.matches(Regex("^\\d*\\.?\\d*$"))) {
                             qtyInput = input
+                            onTrackItemInSession(item.itemCode)
                             salesOrderViewModel.updateSelectedItem(
                                 itemCode = item.itemCode,
                                 qty = qtyInput,
@@ -495,6 +650,7 @@ private fun SalesOrderItemRow(
                     onValueChange = { input ->
                         if (input.matches(Regex("^\\d*\\.?\\d*$"))) {
                             unitPriceInput = input
+                            onTrackItemInSession(item.itemCode)
                             salesOrderViewModel.updateSelectedItem(
                                 itemCode = item.itemCode,
                                 qty = qtyInput,
