@@ -148,13 +148,15 @@ class StockAdjustmentViewModel(
         val headerWithId = ensureStockTakeNo(currentHeader)
         val localHeader = buildHeaderWithCurrentItems(headerWithId, "Submitted")
         val firebaseHeader = localHeader.copy(
-            items = physicalCounts.keys.map { itemCode ->
-                StockAdjustmentDetail(
-                    itemCode = itemCode,
-                    qty = (diffCounts[itemCode] ?: 0).toString(),
-                    uom = stockViewModel.allItems.value.find { it.itemCode == itemCode }?.uom.orEmpty()
-                )
-            }
+            items = physicalCounts.keys
+                .filter { itemCode -> physicalCounts[itemCode].orEmpty().isNotBlank() }
+                .map { itemCode ->
+                    StockAdjustmentDetail(
+                        itemCode = itemCode,
+                        qty = (diffCounts[itemCode] ?: 0).toString(),
+                        uom = stockViewModel.allItems.value.find { it.itemCode == itemCode }?.uom.orEmpty()
+                    )
+                }
         )
 
         saveStockAdjustmentToFirebase(firebaseHeader) { success, message ->
