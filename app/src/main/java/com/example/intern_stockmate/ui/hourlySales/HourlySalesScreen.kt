@@ -55,9 +55,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.intern_stockmate.model.HourlySales
 import com.example.intern_stockmate.viewModel.HourlySalesUiState
 import com.example.intern_stockmate.viewModel.HourlySalesViewModel
-import kotlin.compareTo
-import kotlin.div
-import kotlin.text.toFloat
 
 @Composable
 fun HourlySalesScreenContainer(viewModel: HourlySalesViewModel = viewModel()) {
@@ -195,7 +192,6 @@ private fun HourlySalesScreen(salesData: List<HourlySales>, selectedTabIndex: In
             isLocked = isLocked,
             onLockChange = { isLocked = it }
         )
-
         Text(
             text = "DETAILED LOG",
             fontSize = 14.sp,

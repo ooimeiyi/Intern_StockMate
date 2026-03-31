@@ -44,7 +44,6 @@ fun SalesRankScreenContainer(viewModel: SalesRankViewModel = viewModel()) {
             SalesRankTabHeader(selectedTabIndex = selectedTabIndex, onTabSelected = viewModel::selectTab)
             SalesRankScreen(state = state, selectedTabIndex = selectedTabIndex)
         }
-
         if (state is SalesRankUiState.Loading) {
             Box(
                 modifier = Modifier.fillMaxSize().background(Color.White.copy(alpha = 0.6f)),
@@ -134,7 +133,6 @@ private fun SalesRankScreen(state: SalesRankUiState, selectedTabIndex: Int) {
                 }
             }
         }
-
         SalesRankUiState.Loading -> Unit
     }
 }
@@ -162,12 +160,10 @@ private fun SalesItemRow(index: Int, item: TopSalesItem) {
             color = Color.LightGray,
             modifier = Modifier.width(30.dp)
         )
-
         Column(modifier = Modifier.weight(1.4f)) {
             Text(text = item.description, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Black)
             Text(text = item.code, fontSize = 12.sp, color = Color.Gray)
         }
-
         Text(
             text = String.format("%.2f", item.qty),
             fontSize = 14.sp,
@@ -176,7 +172,6 @@ private fun SalesItemRow(index: Int, item: TopSalesItem) {
             textAlign = TextAlign.End,
             modifier = Modifier.width(60.dp)
         )
-
         Text(
             text = String.format("%,.2f", item.sales),
             fontSize = 14.sp,

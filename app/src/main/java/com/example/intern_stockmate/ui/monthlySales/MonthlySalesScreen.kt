@@ -56,9 +56,6 @@ import com.example.intern_stockmate.model.MonthlySales
 import com.example.intern_stockmate.viewModel.MonthlySalesUiState
 import com.example.intern_stockmate.viewModel.MonthlySalesViewModel
 import java.time.Year
-import kotlin.compareTo
-import kotlin.div
-import kotlin.text.toFloat
 
 private val monthLabels = listOf(
     "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -214,7 +211,6 @@ private fun MonthlySalesScreen(
                 }
             }
         }
-
         MonthlyTrendCard(
             data = salesData,
             selectedTabIndex = selectedTabIndex,
@@ -225,7 +221,6 @@ private fun MonthlySalesScreen(
             isLocked = isLocked,
             onLockChange = { isLocked = it }
         )
-
         Text("DETAILED LOG", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Black)
         MonthlyDetailedLogSection(data = salesData, selectedTabIndex = selectedTabIndex)
     }

@@ -58,9 +58,6 @@ import com.example.intern_stockmate.viewModel.DailySalesViewModel
 import java.time.YearMonth
 import java.time.format.TextStyle as JavaTextStyle
 import java.util.Locale
-import kotlin.compareTo
-import kotlin.div
-import kotlin.text.toFloat
 
 @Composable
 fun DailySalesScreenContainer(viewModel: DailySalesViewModel = viewModel()) {

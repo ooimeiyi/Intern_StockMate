@@ -113,7 +113,6 @@ fun StockAdjustmentScreen(
                                         fontWeight = FontWeight.ExtraBold,
                                         color = Color.Black
                                     )
-
                                     Text(
                                         text = header.status,
                                         fontSize = 14.sp,
@@ -121,12 +120,22 @@ fun StockAdjustmentScreen(
                                         color = if (header.status == "Submitted") Color(0xFF2E7D32) else Color(0xFFE65100)
                                     )
                                 }
+                                Spacer(modifier = Modifier.height(4.dp))
 
+                                Text(
+                                    text = header.date,
+                                    fontSize = 13.sp,
+                                    color = Color.DarkGray
+                                )
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text(text = header.date, fontSize = 13.sp, color = Color.DarkGray)
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(text = header.description, fontSize = 15.sp, color = Color.Black)
+
+                                Text(
+                                    text = header.description,
+                                    fontSize = 15.sp,
+                                    color = Color.Black
+                                )
                                 Spacer(modifier = Modifier.height(6.dp))
+
                                 Text(
                                     text = header.location,
                                     fontSize = 14.sp,

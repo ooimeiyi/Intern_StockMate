@@ -392,7 +392,6 @@ private fun DistributionChartCard(
                     }
                 }
             }
-
             Spacer(modifier = Modifier.height(28.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                 segments.forEach { ChartLegend(it.color, it.name, it.percent.roundToInt()) }
@@ -465,7 +464,12 @@ private fun DetailedBreakdownCard(
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text(title, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = Color.Black)
+                            Text(
+                                title,
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 16.sp,
+                                color = Color.Black
+                            )
                         }
                     }
                     Surface(shape = RoundedCornerShape(4.dp), color = Color(0xFFE3F2FD)) {
@@ -479,7 +483,12 @@ private fun DetailedBreakdownCard(
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("REVENUE", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                Text(
+                    "REVENUE",
+                    fontSize = 12.sp,
+                    color = Color.Gray,
+                    fontWeight = FontWeight.Bold
+                )
                 Text(
                     "RM ${String.format("%,.2f", revenue)}",
                     fontWeight = FontWeight.ExtraBold,

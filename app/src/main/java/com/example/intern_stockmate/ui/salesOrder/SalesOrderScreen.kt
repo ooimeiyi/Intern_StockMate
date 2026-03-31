@@ -113,7 +113,6 @@ fun SalesOrderScreen(
                                         fontWeight = FontWeight.ExtraBold,
                                         color = Color.Black
                                     )
-
                                     Text(
                                         text = header.status,
                                         fontSize = 14.sp,
@@ -123,10 +122,20 @@ fun SalesOrderScreen(
                                 }
 
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text(text = header.date, fontSize = 13.sp, color = Color.DarkGray)
+
+                                Text(
+                                    text = header.date,
+                                    fontSize = 13.sp,
+                                    color = Color.DarkGray
+                                )
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text(text = header.debtor, fontSize = 15.sp, color = Color.Black)
+
+                                Text(text = header.debtor,
+                                    fontSize = 15.sp,
+                                    color = Color.Black
+                                )
                                 Spacer(modifier = Modifier.height(6.dp))
+
                                 Text(
                                     text = header.location,
                                     fontSize = 14.sp,

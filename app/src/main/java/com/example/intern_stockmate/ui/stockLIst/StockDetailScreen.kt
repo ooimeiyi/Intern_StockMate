@@ -91,10 +91,8 @@ fun StockDetailScreen(
                             ?.let { androidx.compose.ui.graphics.painter.BitmapPainter(it) }
                             ?: painterResource(id = R.drawable.stock_mate_logo)
                     }
-
                     else -> painterResource(id = R.drawable.stock_mate_logo)
                 }
-
                 Image(
                     painter = painter,
                     contentDescription = null,
@@ -104,7 +102,6 @@ fun StockDetailScreen(
                         .background(Color.White),
                     contentScale = ContentScale.Crop
                 )
-
                 Surface(
                     modifier = Modifier
                         .padding(16.dp)
@@ -120,7 +117,6 @@ fun StockDetailScreen(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                     )
                 }
-
                 IconButton(
                     onClick = {
                         imagePickerLauncher.launch("image/*")
@@ -132,7 +128,6 @@ fun StockDetailScreen(
                 ) {
                     Icon(Icons.Default.Edit, contentDescription = null, tint = Color.Black)
                 }
-
                 Surface(
                     modifier = Modifier.padding(16.dp).align(Alignment.BottomEnd),
                     color = Color.White,
@@ -315,7 +310,6 @@ fun StockDetailScreen(
                                     fontSize = 14.sp,
                                     color = Color.Black
                                 )
-
                                 PriceCell(uomInfo.price1)
                                 PriceCell(uomInfo.price2)
                                 PriceCell(uomInfo.price3)
@@ -349,7 +343,6 @@ fun StockDetailScreen(
                                 color = Color.Black,
                                 fontWeight = FontWeight.Bold
                             )
-
                             Text(
                                 "QTY",
                                 modifier = Modifier.width(60.dp),
@@ -405,7 +398,6 @@ fun InfoCard(
                     color = Color.Black
                 )
             }
-
             content?.invoke(this)
         }
     }

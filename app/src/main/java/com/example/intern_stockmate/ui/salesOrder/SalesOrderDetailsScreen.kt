@@ -71,7 +71,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -120,7 +119,6 @@ fun SalesOrderDetailsScreen(
     val manuallySelectedCodes = remember { mutableStateListOf<String>() }
     val sessionTrackedCodes = remember { mutableStateListOf<String>() }
     var pickerSelectedCode by remember { mutableStateOf<String?>(null) }
-
 
     LaunchedEffect(locations, selectedLocation) {
         if (locations.isNotEmpty() && selectedLocation.isBlank()) {

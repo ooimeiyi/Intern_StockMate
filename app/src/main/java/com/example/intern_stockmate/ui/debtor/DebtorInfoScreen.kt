@@ -226,7 +226,6 @@ fun OutstandingDebtorListSection(items: List<OutstandingDebtorItem>) {
         }
         return
     }
-
     Column(modifier = Modifier.fillMaxWidth()) {
         items.forEach { item ->
             OutstandingDebtorItemCard(item)
@@ -276,7 +275,6 @@ fun OutstandingDebtorItemCard(item: OutstandingDebtorItem) {
                     )
                 }
             }
-
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = "RM ${String.format("%,.2f", item.outstandingAmount)}",

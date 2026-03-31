@@ -71,7 +71,7 @@ fun LogInScreen(
                 modifier = Modifier.padding(top = 4.dp)
             )
             Spacer(modifier = Modifier.height(32.dp))
-            // Login Card
+
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -83,7 +83,6 @@ fun LogInScreen(
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.Start
                 ) {
-                    // USERNAME LABEL
                     Text(
                         text = "USERNAME",
                         fontSize = 12.sp,
@@ -104,7 +103,6 @@ fun LogInScreen(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // PASSWORD LABEL
                     Text(
                         text = "PASSWORD",
                         fontSize = 12.sp,
@@ -149,7 +147,6 @@ fun LogInScreen(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // Login Button
                     Button(
                         onClick = {
                             if (loginViewModel.attemptLogin()) {
@@ -180,7 +177,6 @@ fun LogInScreen(
                 }
             }
 
-            // Default Credentials Footer
             Text(
                 text = "Default: Admin / Admin",
                 fontSize = 12.sp,

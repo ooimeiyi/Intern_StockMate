@@ -33,7 +33,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Save
@@ -56,8 +55,6 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -84,7 +81,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
 import com.example.intern_stockmate.model.StockItem
 import com.example.intern_stockmate.scanner.QRCodeScanner
-import com.example.intern_stockmate.ui.stockLIst.StockItemRow
 import com.example.intern_stockmate.viewModel.StockAdjustmentViewModel
 import com.example.intern_stockmate.viewModel.StockViewModel
 import java.text.SimpleDateFormat
@@ -305,7 +301,6 @@ fun AdjustmentItemsScreen(
                             }
                         )
                     )
-
                     Button(
                         onClick = {
                             val query = localQuery.trim()
@@ -377,7 +372,6 @@ fun AdjustmentItemsScreen(
                         }
                     }
                 )
-
             }
         }
     }
@@ -425,7 +419,6 @@ fun AdjustmentItemsScreen(
                         fontWeight = FontWeight.Bold,
                         color = Color.Black
                     )
-
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -469,7 +462,12 @@ fun FilterItemRow(item: StockItem, onClick: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(item.itemCode, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                Text(
+                    text = item.itemCode,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
                 Text(
                     text = item.description,
                     fontSize = 14.sp,
@@ -628,7 +626,12 @@ fun StockItemFilterRow(
         Column(modifier = Modifier.padding(12.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(item.itemCode, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                    Text(
+                        item.itemCode,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
                     Text(
                         item.description,
                         fontSize = 14.sp,
@@ -669,7 +672,6 @@ fun StockItemFilterRow(
                     modifier = Modifier.width(100.dp),
                     color = Color.Black
                 )
-
                 EditableQtyBox(
                     label = "Physical Qty",
                     value = physicalValue,
@@ -682,7 +684,6 @@ fun StockItemFilterRow(
                     minWidth = 90.dp,
                     color = Color.Black
                 )
-
                 QtyDisplayBox(
                     label = "Diff Qty",
                     value = diffValue.toString(),
