@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.intern_stockmate.model.HamburgerScreen
+import com.example.intern_stockmate.ui.configuration.ConfigScreen
 import com.example.intern_stockmate.ui.contact.ContactScreen
 import com.example.intern_stockmate.ui.creditor.CreditorInfoScreenContainer
 import com.example.intern_stockmate.ui.dailySales.DailySalesScreenContainer
@@ -33,6 +34,7 @@ import com.example.intern_stockmate.ui.stockLIst.StockDetailScreen
 import com.example.intern_stockmate.ui.stockAdjustment.AdjustmentItemsScreen
 import com.example.intern_stockmate.ui.stockAdjustment.StockAdjustmentScreen
 import com.example.intern_stockmate.ui.stockLIst.StockListScreenContainer
+import com.example.intern_stockmate.viewModel.LoginViewModel
 import com.example.intern_stockmate.viewModel.SalesOrderViewModel
 import com.example.intern_stockmate.viewModel.SalesOrderViewModelFactory
 import com.example.intern_stockmate.viewModel.StockAdjustmentViewModel
@@ -43,6 +45,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreenWithMenu(
+    loginViewModel: LoginViewModel,
     onLogout: () -> Unit
 ) {
     val navController = rememberNavController()
@@ -276,7 +279,13 @@ fun MainScreenWithMenu(
                         CreditorInfoScreenContainer()
                     }
 
-                    composable(HamburgerScreen.Config.route) { }
+                    composable(HamburgerScreen.Config.route) {
+                        ConfigScreen(
+                            innerPadding = PaddingValues(0.dp),
+                            loginViewModel = loginViewModel,
+                            scope = scope
+                        )
+                    }
 
 
                     composable(HamburgerScreen.Contact.route) {

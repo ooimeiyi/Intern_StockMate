@@ -43,7 +43,7 @@ fun LogInScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8F9FA))
+            .background(Color(0xFFFFFFFF))
     ) {
 
         Column(

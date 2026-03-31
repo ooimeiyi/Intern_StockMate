@@ -6,9 +6,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.getValue
@@ -17,11 +16,18 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import com.example.intern_stockmate.ui.dashboard.MainScreenWithMenu
 import com.example.intern_stockmate.ui.loginScreen.LogInScreen
+import com.example.intern_stockmate.data.local.UserCredentialDatabase
 import com.example.intern_stockmate.viewModel.LoginViewModel
+import com.example.intern_stockmate.viewModel.LoginViewModelFactory
 
 @Composable
 fun StockMateScreen() {
-    val loginViewModel: LoginViewModel = viewModel()
+    val context = LocalContext.current
+    val loginViewModel: LoginViewModel = viewModel(
+        factory = LoginViewModelFactory(
+            UserCredentialDatabase.getInstance(context).userCredentialDao()
+        )
+    )
     var isLoggedIn by rememberSaveable { mutableStateOf(false) }
 
     Surface(
@@ -35,6 +41,7 @@ fun StockMateScreen() {
         ) { loggedIn ->
             if (loggedIn) {
                 MainScreenWithMenu(
+                    loginViewModel = loginViewModel,
                     onLogout = {
                         isLoggedIn = false
                         loginViewModel.clearFields()

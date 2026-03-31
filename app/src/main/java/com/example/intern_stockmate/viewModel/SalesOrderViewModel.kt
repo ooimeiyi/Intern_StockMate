@@ -35,8 +35,8 @@ class SalesOrderViewModel(
         val unitPrice: Double
     )
 
-    private val soPrefix = "SO-"
-    private val soRegex = Regex("^SO-(\\d+)$")
+    private val soPrefix = "SM-SO"
+    private val soRegex = Regex("^SM-SO(\\d+)$")
     private val soDigits = 6
 
     private val _savedHeaders = MutableStateFlow<List<SalesOrderHeader>>(emptyList())
