@@ -27,6 +27,10 @@ class SalesOrderViewModel(
     private val stockViewModel: StockViewModel,
     private val salesOrderDao: SalesOrderDao
 ) : ViewModel() {
+    data class DebtorOption(
+        val code: String,
+        val companyName: String
+    )
 
     data class SalesOrderItemInput(
         val itemCode: String,
@@ -37,7 +41,7 @@ class SalesOrderViewModel(
 
     private val soPrefix = "SM-SO"
     private val soRegex = Regex("^SM-SO(\\d+)$")
-    private val soDigits = 6
+    private val soDigits = 5
 
     private val _savedHeaders = MutableStateFlow<List<SalesOrderHeader>>(emptyList())
     val savedHeaders: StateFlow<List<SalesOrderHeader>> = _savedHeaders.asStateFlow()
@@ -50,6 +54,7 @@ class SalesOrderViewModel(
 
     private val _debtors = MutableStateFlow<List<String>>(emptyList())
     val debtors: StateFlow<List<String>> = _debtors.asStateFlow()
+    private var debtorCodeByCompanyName: Map<String, String> = emptyMap()
 
     val selectedLocation: StateFlow<String> = stockViewModel.selectedLocation
     val locations: StateFlow<List<String>> = stockViewModel.locations
@@ -250,10 +255,12 @@ class SalesOrderViewModel(
 
         val payload = mapOf(
             "debtor" to finalized.debtor,
+            "DebtorCode" to resolveDebtorCode(finalized.debtor),
             "date" to finalized.date,
             "soNo" to finalized.soNo,
             "location" to finalized.location,
             "status" to finalized.status,
+            "syncStatus" to "Pending",
             "items" to finalized.items.map {
                 mapOf(
                     "ItemCode" to it.itemCode,
@@ -342,15 +349,33 @@ class SalesOrderViewModel(
                     .orEmpty()
                     .mapNotNull { raw ->
                         val item = raw as? Map<*, *> ?: return@mapNotNull null
-                        item["CompanyName"]?.toString()?.trim()?.takeIf { it.isNotEmpty() }
+                        val companyName = item["CompanyName"]?.toString()?.trim().orEmpty()
+                        if (companyName.isBlank()) return@mapNotNull null
+                        DebtorOption(
+                            code = item["DebtorCode"]?.toString()?.trim().orEmpty(),
+                            companyName = companyName
+                        )
                     }
-                    .distinct()
-                    .sorted()
-                _debtors.value = options
+                    .distinctBy { it.companyName }
+                    .sortedBy { it.companyName }
+
+                debtorCodeByCompanyName = options.associate { it.companyName to it.code }
+                _debtors.value = options.map { it.companyName }
             }
             .addOnFailureListener { error ->
                 Log.e("SalesOrderViewModel", "Failed to load debtors", error)
             }
+    }
+
+    private fun resolveDebtorCode(debtorLabel: String): String {
+        val normalizedLabel = debtorLabel.trim()
+        if (normalizedLabel.isBlank()) return ""
+
+        debtorCodeByCompanyName[normalizedLabel]?.takeIf { it.isNotBlank() }?.let { return it }
+
+        return normalizedLabel.substringBefore(" - ", "").trim()
+            .takeIf { it.isNotBlank() && it != normalizedLabel }
+            .orEmpty()
     }
 
     private fun extractSequence(soNo: String): Int? {
