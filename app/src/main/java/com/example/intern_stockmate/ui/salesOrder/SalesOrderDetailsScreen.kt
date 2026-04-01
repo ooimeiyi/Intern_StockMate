@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -32,6 +33,10 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Backspace
+import androidx.compose.material.icons.filled.Backspace
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Save
@@ -66,6 +71,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -640,7 +646,8 @@ private fun SalesOrderItemRow(
                         }
                     },
                     color = Color.Black,
-                    isNumber = true
+                    isNumber = true,
+                    numberSuffix = selectedUom.ifBlank { null }
                 )
                 SalesOrderEditableBox(
                     label = "Unit Price",
@@ -797,8 +804,11 @@ private fun SalesOrderEditableBox(
     modifier: Modifier = Modifier,
     color: Color = Color.Black,
     minWidth: Dp = 60.dp,
-    isNumber: Boolean = false
+    isNumber: Boolean = false,
+    numberSuffix: String? = null
 ) {
+    var showNumberPad by remember { mutableStateOf(false) }
+
     Column(horizontalAlignment = Alignment.Start, modifier = modifier.widthIn(min = minWidth)) {
         Text(label, fontSize = 10.sp, color = Color.Gray)
         Box(
@@ -807,23 +817,196 @@ private fun SalesOrderEditableBox(
                 .width(IntrinsicSize.Min)
                 .widthIn(min = minWidth)
                 .background(Color(0xFFF5F5F5), RoundedCornerShape(4.dp))
-                .padding(horizontal = 8.dp),
+                .padding(horizontal = 8.dp)
+                .then(
+                    if (isNumber) {
+                        Modifier.clickable { showNumberPad = true }
+                    } else {
+                        Modifier
+                    }
+                ),
             contentAlignment = Alignment.CenterStart
         ) {
-            BasicTextField(
-                value = value,
-                onValueChange = onValueChange,
-                textStyle = TextStyle(
+            Text(
+                text = if (value.isBlank()) "0" else value,
+                style = TextStyle(
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = color
                 ),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = if (isNumber) KeyboardType.Number else KeyboardType.Text
-                ),
+
                 modifier = Modifier.wrapContentWidth()
             )
         }
+    }
+
+    if (showNumberPad && isNumber) {
+        SalesOrderNumberPadDialog(
+            title = label,
+            initialValue = value,
+            suffix = numberSuffix,
+            onDismiss = { showNumberPad = false },
+            onConfirm = {
+                onValueChange(it)
+                showNumberPad = false
+            }
+        )
+    }
+}
+
+private val PadButtonGray = Color(0xFFF5F5F5)
+private val PadButtonRed = Color(0xFFE53935)
+private val PadButtonGreen = Color(0xFF43A047)
+private val PadTextRed = Color(0xFFE53935)
+
+@Composable
+fun SalesOrderNumberPadDialog(
+    title: String,
+    initialValue: String,
+    suffix: String?,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var draft by remember(initialValue) { mutableStateOf(initialValue) }
+
+    fun appendValue(input: String) {
+        if (input == "." && draft.contains(".")) return
+        draft = if (draft == "0" && input != ".") input else draft + input
+    }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = title,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black,
+                    fontSize = 18.sp
+                )
+                Spacer(Modifier.height(12.dp))
+
+                // Input Display
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFF8F8F8), RoundedCornerShape(8.dp))
+                        .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 12.dp, vertical = 14.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (draft.isBlank()) "0" else draft,
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 24.sp
+                        )
+                        if (!suffix.isNullOrBlank()) {
+                            Text(text = "UOM ($suffix)", color = Color.Gray, fontSize = 13.sp)
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        NumberPadKey("1", Modifier.weight(1f)) { appendValue("1") }
+                        NumberPadKey("2", Modifier.weight(1f)) { appendValue("2") }
+                        NumberPadKey("3", Modifier.weight(1f)) { appendValue("3") }
+                        NumberPadIconKey(
+                            icon = Icons.Default.Close,
+                            containerColor = PadButtonRed,
+                            contentColor = Color.White,
+                            modifier = Modifier.weight(1f)
+                        ) { onDismiss() }
+                    }
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        NumberPadKey("4", Modifier.weight(1f)) { appendValue("4") }
+                        NumberPadKey("5", Modifier.weight(1f)) { appendValue("5") }
+                        NumberPadKey("6", Modifier.weight(1f)) { appendValue("6") }
+                        NumberPadIconKey(Icons.Default.Backspace, Modifier.weight(1f)) {
+                            if (draft.isNotEmpty()) draft = draft.dropLast(1)
+                        }
+                    }
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        NumberPadKey("7", Modifier.weight(1f)) { appendValue("7") }
+                        NumberPadKey("8", Modifier.weight(1f)) { appendValue("8") }
+                        NumberPadKey("9", Modifier.weight(1f)) { appendValue("9") }
+                        NumberPadKey(
+                            text = "C",
+                            textColor = PadTextRed,
+                            modifier = Modifier.weight(1f)
+                        ) { draft = "" }
+                    }
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        NumberPadKey(".", Modifier.weight(1f)) { appendValue(".") }
+                        NumberPadKey("0", Modifier.weight(1f)) { appendValue("0") }
+                        NumberPadIconKey(
+                            icon = Icons.Default.CheckCircle,
+                            containerColor = PadButtonGreen,
+                            contentColor = Color.White,
+                            modifier = Modifier
+                                .weight(2f)
+                                .height(50.dp)
+                        ) { onConfirm(draft) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NumberPadKey(
+    text: String,
+    modifier: Modifier = Modifier,
+    textColor: Color = Color.Black,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        shape = RoundedCornerShape(8.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = PadButtonGray,
+            contentColor = textColor
+        ),
+        modifier = modifier.height(50.dp),
+        contentPadding = PaddingValues(0.dp)
+    ) {
+        Text(text = text, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+    }
+}
+
+@Composable
+private fun NumberPadIconKey(
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    containerColor: Color = PadButtonGray,
+    contentColor: Color = Color.Black,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        shape = RoundedCornerShape(8.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = containerColor,
+            contentColor = contentColor
+        ),
+        modifier = modifier.height(50.dp),
+        contentPadding = PaddingValues(0.dp)
+    ) {
+        Icon(icon, contentDescription = null, modifier = Modifier.size(25.dp))
     }
 }
 
