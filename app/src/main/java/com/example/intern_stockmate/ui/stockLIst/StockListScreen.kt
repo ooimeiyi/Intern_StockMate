@@ -7,6 +7,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -63,6 +64,8 @@ import com.example.intern_stockmate.viewModel.StockViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.platform.LocalFocusManager
 
 @Composable
 fun StockListScreenContainer(
@@ -74,6 +77,8 @@ fun StockListScreenContainer(
     val isInvalidSearch by viewModel.isInvalidSearch.collectAsState()
     val filteredItems by viewModel.filteredItems.collectAsState()
 
+    val focusManager = LocalFocusManager.current
+
     LaunchedEffect(Unit) {
         viewModel.getStockList()
     }
@@ -82,6 +87,12 @@ fun StockListScreenContainer(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
+            .clickable(
+                indication = null, // no ripple
+                interactionSource = remember { MutableInteractionSource() }
+            ) {
+                focusManager.clearFocus() // hides keyboard
+            }
     ) {
         val itemsList = if (state is StockUiState.Success) filteredItems else emptyList()
 

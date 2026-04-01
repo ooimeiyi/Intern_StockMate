@@ -87,6 +87,11 @@ import com.example.intern_stockmate.model.StockItem
 import com.example.intern_stockmate.scanner.QRCodeScanner
 import com.example.intern_stockmate.viewModel.SalesOrderViewModel
 import com.example.intern_stockmate.viewModel.StockViewModel
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.material.icons.filled.Calculate
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -125,6 +130,7 @@ fun SalesOrderDetailsScreen(
     val manuallySelectedCodes = remember { mutableStateListOf<String>() }
     val sessionTrackedCodes = remember { mutableStateListOf<String>() }
     var pickerSelectedCode by remember { mutableStateOf<String?>(null) }
+    val focusManager = LocalFocusManager.current
 
     LaunchedEffect(locations, selectedLocation) {
         if (locations.isNotEmpty() && selectedLocation.isBlank()) {
@@ -237,7 +243,13 @@ fun SalesOrderDetailsScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
+                .padding(padding)
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ) {
+                    focusManager.clearFocus() // hides keyboard
+                },
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
@@ -881,12 +893,25 @@ fun SalesOrderNumberPadDialog(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = title,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black,
-                    fontSize = 18.sp
-                )
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Calculate,
+                        contentDescription = "Calculator",
+                        tint = Color(0xFFEF3636),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+
+                    Text(
+                        text = title,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black,
+                        fontSize = 18.sp
+                    )
+                }
                 Spacer(Modifier.height(12.dp))
 
                 // Input Display
@@ -918,10 +943,10 @@ fun SalesOrderNumberPadDialog(
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        NumberPadKey("1", Modifier.weight(1f)) { appendValue("1") }
-                        NumberPadKey("2", Modifier.weight(1f)) { appendValue("2") }
-                        NumberPadKey("3", Modifier.weight(1f)) { appendValue("3") }
-                        NumberPadIconKey(
+                        SalesOrderNumberPadKey("1", Modifier.weight(1f)) { appendValue("1") }
+                        SalesOrderNumberPadKey("2", Modifier.weight(1f)) { appendValue("2") }
+                        SalesOrderNumberPadKey("3", Modifier.weight(1f)) { appendValue("3") }
+                        SalesOrderNumberPadIconKey(
                             icon = Icons.Default.Close,
                             containerColor = PadButtonRed,
                             contentColor = Color.White,
@@ -930,19 +955,19 @@ fun SalesOrderNumberPadDialog(
                     }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        NumberPadKey("4", Modifier.weight(1f)) { appendValue("4") }
-                        NumberPadKey("5", Modifier.weight(1f)) { appendValue("5") }
-                        NumberPadKey("6", Modifier.weight(1f)) { appendValue("6") }
-                        NumberPadIconKey(Icons.Default.Backspace, Modifier.weight(1f)) {
+                        SalesOrderNumberPadKey("4", Modifier.weight(1f)) { appendValue("4") }
+                        SalesOrderNumberPadKey("5", Modifier.weight(1f)) { appendValue("5") }
+                        SalesOrderNumberPadKey("6", Modifier.weight(1f)) { appendValue("6") }
+                        SalesOrderNumberPadIconKey(Icons.Default.Backspace, Modifier.weight(1f)) {
                             if (draft.isNotEmpty()) draft = draft.dropLast(1)
                         }
                     }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        NumberPadKey("7", Modifier.weight(1f)) { appendValue("7") }
-                        NumberPadKey("8", Modifier.weight(1f)) { appendValue("8") }
-                        NumberPadKey("9", Modifier.weight(1f)) { appendValue("9") }
-                        NumberPadKey(
+                        SalesOrderNumberPadKey("7", Modifier.weight(1f)) { appendValue("7") }
+                        SalesOrderNumberPadKey("8", Modifier.weight(1f)) { appendValue("8") }
+                        SalesOrderNumberPadKey("9", Modifier.weight(1f)) { appendValue("9") }
+                        SalesOrderNumberPadKey(
                             text = "C",
                             textColor = PadTextRed,
                             modifier = Modifier.weight(1f)
@@ -950,9 +975,9 @@ fun SalesOrderNumberPadDialog(
                     }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        NumberPadKey(".", Modifier.weight(1f)) { appendValue(".") }
-                        NumberPadKey("0", Modifier.weight(1f)) { appendValue("0") }
-                        NumberPadIconKey(
+                        SalesOrderNumberPadKey(".", Modifier.weight(1f)) { appendValue(".") }
+                        SalesOrderNumberPadKey("0", Modifier.weight(1f)) { appendValue("0") }
+                        SalesOrderNumberPadIconKey(
                             icon = Icons.Default.CheckCircle,
                             containerColor = PadButtonGreen,
                             contentColor = Color.White,
@@ -968,7 +993,7 @@ fun SalesOrderNumberPadDialog(
 }
 
 @Composable
-private fun NumberPadKey(
+private fun SalesOrderNumberPadKey(
     text: String,
     modifier: Modifier = Modifier,
     textColor: Color = Color.Black,
@@ -989,7 +1014,7 @@ private fun NumberPadKey(
 }
 
 @Composable
-private fun NumberPadIconKey(
+private fun SalesOrderNumberPadIconKey(
     icon: ImageVector,
     modifier: Modifier = Modifier,
     containerColor: Color = PadButtonGray,

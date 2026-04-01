@@ -27,7 +27,12 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import com.example.intern_stockmate.R
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.focus.focusModifier
+import androidx.compose.ui.platform.LocalFocusManager
 import android.widget.Toast
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.text.input.VisualTransformation
 import com.example.intern_stockmate.viewModel.LoginViewModel
@@ -45,11 +50,18 @@ fun LogInScreen(
     )
 
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFFFFFFF))
+            .clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            ) {
+                focusManager.clearFocus() // Hides keyboard
+            }
     ) {
 
         IconButton(

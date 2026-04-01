@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,6 +34,10 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Backspace
+import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Save
@@ -83,6 +88,9 @@ import com.example.intern_stockmate.model.StockItem
 import com.example.intern_stockmate.scanner.QRCodeScanner
 import com.example.intern_stockmate.viewModel.StockAdjustmentViewModel
 import com.example.intern_stockmate.viewModel.StockViewModel
+import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalFocusManager
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -122,6 +130,7 @@ fun AdjustmentItemsScreen(
     val manuallySelectedCodes = remember { mutableStateListOf<String>() }
     val sessionTrackedCodes = remember { mutableStateListOf<String>() }
     var pickerSelectedCode by remember { mutableStateOf<String?>(null) }
+    val focusManager = LocalFocusManager.current
 
     LaunchedEffect(locations, selectedLocation, selectedHeader) {
         if (selectedHeader == null && locations.isNotEmpty() && selectedLocation.isBlank()) {
@@ -185,7 +194,13 @@ fun AdjustmentItemsScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
+                .padding(padding)
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ) {
+                    focusManager.clearFocus() // hides keyboard
+                },
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
@@ -705,6 +720,8 @@ fun EditableQtyBox(
     minWidth: Dp = 60.dp,
     isNumber: Boolean = false
 ) {
+    var showNumberPad by remember { mutableStateOf(false) }
+
     Column(
         horizontalAlignment = Alignment.Start,
         modifier = modifier.widthIn(min = minWidth)
@@ -717,32 +734,201 @@ fun EditableQtyBox(
                 .width(IntrinsicSize.Min)
                 .widthIn(min = minWidth)
                 .background(Color(0xFFF5F5F5), RoundedCornerShape(4.dp))
-                .padding(horizontal = 8.dp),
+                .padding(horizontal = 8.dp)
+                .then(
+                    if (isNumber) {
+                        Modifier.clickable { showNumberPad = true }
+                    } else {
+                        Modifier
+                    }
+                ),
             contentAlignment = Alignment.Center
         ) {
-            BasicTextField(
-                value = value,
-                onValueChange = onValueChange,
-                textStyle = TextStyle(
+            Text(
+                text = if (value.isBlank()) "0" else value,
+                style = TextStyle(
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = color,
                     textAlign = TextAlign.Center
                 ),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = if (isNumber) KeyboardType.Number else KeyboardType.Text
-                ),
-                modifier = Modifier.wrapContentWidth(),
-                decorationBox = { innerTextField ->
-                    Box(contentAlignment = Alignment.Center) {
-                        if (value.isEmpty()) {
-                            Text("0", color = Color.LightGray, fontSize = 14.sp)
-                        }
-                        innerTextField()
-                    }
-                }
+                modifier = Modifier.wrapContentWidth()
             )
         }
+    }
+    if (showNumberPad && isNumber) {
+        PhysicalQtyNumberPadDialog(
+            title = label,
+            initialValue = value,
+            onDismiss = { showNumberPad = false },
+            onConfirm = {
+                onValueChange(it)
+                showNumberPad = false
+            }
+        )
+    }
+}
+
+private val PadButtonGray = Color(0xFFF5F5F5)
+private val PadButtonRed = Color(0xFFE53935)
+private val PadButtonGreen = Color(0xFF43A047)
+private val PadTextRed = Color(0xFFE53935)
+
+@Composable
+private fun PhysicalQtyNumberPadDialog(
+    title: String,
+    initialValue: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var draft by remember(initialValue) { mutableStateOf(initialValue) }
+
+    fun appendValue(input: String) {
+        if (input == "." && draft.contains(".")) return
+        draft = if (draft == "0" && input != ".") input else draft + input
+    }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Calculate,
+                        contentDescription = "Calculator",
+                        tint = Color(0xFFEF3636),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+
+                    Text(
+                        text = title,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black,
+                        fontSize = 18.sp
+                    )
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                // Input Display Box
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFF8F8F8), RoundedCornerShape(8.dp))
+                        .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 12.dp, vertical = 14.dp)
+                ) {
+                    Text(
+                        text = if (draft.isBlank()) "0" else draft,
+                        color = Color.Black,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 24.sp
+                    )
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                // Keypad Grid - 4 Columns
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val rowMod = Modifier.fillMaxWidth()
+
+                    // Row 1: 1, 2, 3, Close (Red)
+                    Row(rowMod, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        NumberPadKey("1", Modifier.weight(1f)) { appendValue("1") }
+                        NumberPadKey("2", Modifier.weight(1f)) { appendValue("2") }
+                        NumberPadKey("3", Modifier.weight(1f)) { appendValue("3") }
+                        NumberPadIconKey(
+                            icon = Icons.Default.Close,
+                            containerColor = PadButtonRed,
+                            contentColor = Color.White,
+                            modifier = Modifier.weight(1f)
+                        ) { onDismiss() }
+                    }
+
+                    // Row 2: 4, 5, 6, Backspace
+                    Row(rowMod, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        NumberPadKey("4", Modifier.weight(1f)) { appendValue("4") }
+                        NumberPadKey("5", Modifier.weight(1f)) { appendValue("5") }
+                        NumberPadKey("6", Modifier.weight(1f)) { appendValue("6") }
+                        NumberPadIconKey(Icons.Default.Backspace, Modifier.weight(1f)) {
+                            if (draft.isNotEmpty()) draft = draft.dropLast(1)
+                        }
+                    }
+
+                    // Row 3: 7, 8, 9, Clear (Red Text)
+                    Row(rowMod, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        NumberPadKey("7", Modifier.weight(1f)) { appendValue("7") }
+                        NumberPadKey("8", Modifier.weight(1f)) { appendValue("8") }
+                        NumberPadKey("9", Modifier.weight(1f)) { appendValue("9") }
+                        NumberPadKey("C", Modifier.weight(1f), textColor = PadTextRed) { draft = "" }
+                    }
+
+                    // Row 4: . , 0, OK (Green - Spans 2)
+                    Row(rowMod, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        NumberPadKey(".", Modifier.weight(1f)) { appendValue(".") }
+                        NumberPadKey("0", Modifier.weight(1f)) { appendValue("0") }
+                        NumberPadIconKey(
+                            icon = Icons.Default.CheckCircle,
+                            containerColor = PadButtonGreen,
+                            contentColor = Color.White,
+                            modifier = Modifier.weight(2f)
+                        ) { onConfirm(draft) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Reuse the same helper composables for perfect consistency
+@Composable
+private fun NumberPadKey(
+    text: String,
+    modifier: Modifier = Modifier,
+    textColor: Color = Color.Black,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        shape = RoundedCornerShape(8.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = PadButtonGray,
+            contentColor = textColor
+        ),
+        modifier = modifier.height(50.dp),
+        contentPadding = PaddingValues(0.dp)
+    ) {
+        Text(text = text, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+    }
+}
+
+@Composable
+private fun NumberPadIconKey(
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    containerColor: Color = PadButtonGray,
+    contentColor: Color = Color.Black,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        shape = RoundedCornerShape(8.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = containerColor,
+            contentColor = contentColor
+        ),
+        modifier = modifier.height(50.dp),
+        contentPadding = PaddingValues(0.dp)
+    ) {
+        Icon(icon, contentDescription = null, modifier = Modifier.size(25.dp))
     }
 }
 
