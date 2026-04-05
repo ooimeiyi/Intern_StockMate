@@ -104,25 +104,6 @@ private fun ItemInfoScreen(summary: ItemInfo, onRefresh: () -> Unit) {
                 ItemSummaryRow("Item Group Count", summary.itemGroupCount.toString())
                 ItemSummaryRow("Item Type Count", summary.itemTypeCount.toString())
                 ItemSummaryRow("Negative Qty", summary.negativeQty.toString(), isNegativeValue = true)
-                if (summary.lastUpdate.isNotBlank()) {
-                    ItemSummaryRow("Last Update", summary.lastUpdate)
-                }
-            }
-        }
-
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Button(
-                onClick = onRefresh,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-            ) {
-                Text(
-                    text = "Refresh",
-                    color = Color.White,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 18.sp
-                )
             }
         }
     }

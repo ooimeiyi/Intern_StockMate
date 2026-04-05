@@ -97,6 +97,20 @@ fun DashboardScreen(
             }
 
         }
+        item { SectionHeader("Item Info") }
+
+        item{
+            Row(Modifier.padding(horizontal = 8.dp)) {
+                Box(Modifier.weight(1f)) {
+                    DashboardCard("Item Info", Icons.Default.Info) {
+                        onNavigate(HamburgerScreen.Items)
+                    }
+                }
+                Spacer(Modifier.weight(1f))
+
+            }
+        }
+
 
         item { SectionHeader("CRM & Account") }
 
