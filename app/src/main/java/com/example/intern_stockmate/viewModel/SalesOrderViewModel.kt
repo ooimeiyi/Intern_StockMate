@@ -358,7 +358,7 @@ class SalesOrderViewModel(
     }
 
     private fun loadDebtors() {
-        CompanyContext.collection(firestore, COLLECTION_NAME)
+        CompanyContext.collection(firestore, DEBTOR_COLLECTION)
             .document(DEBTOR_DOCUMENT)
             .get()
             .addOnSuccessListener { snapshot ->
