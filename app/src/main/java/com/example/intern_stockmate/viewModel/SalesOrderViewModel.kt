@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.intern_stockmate.data.CompanyContext
 import com.example.intern_stockmate.data.local.SalesOrderDao
 import com.example.intern_stockmate.data.local.SalesOrderDatabase
 import com.example.intern_stockmate.data.local.toEntity
@@ -20,12 +21,13 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlin.math.max
 
 class SalesOrderViewModel(
+    private val application: Application,
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance(),
-    private val stockViewModel: StockViewModel,
-    private val salesOrderDao: SalesOrderDao
+    private val stockViewModel: StockViewModel
 ) : ViewModel() {
     data class DebtorOption(
         val code: String,
@@ -40,6 +42,8 @@ class SalesOrderViewModel(
     )
 
     private val soPrefix = "SM-SO"
+
+    private var salesOrderDao = daoForCurrentCompany()
     private val soRegex = Regex("^SM-SO(\\d+)$")
     private val soDigits = 5
 
@@ -62,8 +66,21 @@ class SalesOrderViewModel(
     val selectedItems = mutableStateMapOf<String, SalesOrderItemInput>()
 
     init {
-        loadSavedSalesOrdersFromLocal()
-        loadDebtors()
+        viewModelScope.launch {
+            CompanyContext.selectedCompanyId
+                .collect { companyId ->
+                    salesOrderDao = daoForCompany(companyId)
+                    if (companyId.isBlank()) {
+                        _savedHeaders.value = emptyList()
+                        _selectedHeader.value = null
+                        _debtors.value = emptyList()
+                        debtorCodeByCompanyName = emptyMap()
+                    } else {
+                        loadSavedSalesOrdersFromLocal()
+                        loadDebtors()
+                    }
+                }
+        }
     }
 
     fun onLocationSelected(location: String) {
@@ -157,7 +174,7 @@ class SalesOrderViewModel(
     }
 
     private fun loadSavedSalesOrdersFromFirebase() {
-        firestore.collection(COLLECTION_NAME)
+        CompanyContext.collection(firestore, COLLECTION_NAME)
             .get()
             .addOnSuccessListener { snapshot ->
                 val headers = snapshot.documents.map { doc ->
@@ -271,7 +288,7 @@ class SalesOrderViewModel(
             }
         )
 
-        firestore.collection(COLLECTION_NAME)
+        CompanyContext.collection(firestore, COLLECTION_NAME)
             .document(finalized.soNo)
             .set(payload, SetOptions.merge())
             .addOnSuccessListener {
@@ -311,7 +328,7 @@ class SalesOrderViewModel(
 
     private fun updateSalesOrderStatusInFirebase(soNo: String, status: String) {
         if (soNo.isBlank()) return
-        firestore.collection(COLLECTION_NAME)
+        CompanyContext.collection(firestore, COLLECTION_NAME)
             .document(soNo)
             .set(mapOf("status" to status), SetOptions.merge())
             .addOnFailureListener { error ->
@@ -324,7 +341,7 @@ class SalesOrderViewModel(
             .mapNotNull { extractSequence(it.soNo) }
             .maxOrNull() ?: 0
 
-        firestore.collection(COLLECTION_NAME)
+        CompanyContext.collection(firestore, COLLECTION_NAME)
             .get()
             .addOnSuccessListener { snapshot ->
                 val firebaseMax = snapshot.documents
@@ -341,7 +358,7 @@ class SalesOrderViewModel(
     }
 
     private fun loadDebtors() {
-        firestore.collection(DEBTOR_COLLECTION)
+        CompanyContext.collection(firestore, COLLECTION_NAME)
             .document(DEBTOR_DOCUMENT)
             .get()
             .addOnSuccessListener { snapshot ->
@@ -401,6 +418,11 @@ class SalesOrderViewModel(
             .sortedBy { it.itemCode }
     }
 
+    private fun daoForCurrentCompany() = daoForCompany(CompanyContext.selectedCompanyId.value)
+
+    private fun daoForCompany(companyId: String) =
+        SalesOrderDatabase.getInstance(application, companyId).salesOrderDao()
+
     private companion object {
         const val COLLECTION_NAME = "SalesOrders"
         const val DEBTOR_COLLECTION = "DebtorSummary"
@@ -415,8 +437,7 @@ class SalesOrderViewModelFactory(
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(SalesOrderViewModel::class.java)) {
-            val dao = SalesOrderDatabase.getInstance(application).salesOrderDao()
-            return SalesOrderViewModel(stockViewModel = stockViewModel, salesOrderDao = dao) as T
+            return SalesOrderViewModel(application = application, stockViewModel = stockViewModel) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }

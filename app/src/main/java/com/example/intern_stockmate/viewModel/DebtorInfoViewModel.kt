@@ -1,6 +1,7 @@
 package com.example.intern_stockmate.viewModel
 
 import androidx.lifecycle.ViewModel
+import com.example.intern_stockmate.data.CompanyContext
 import com.example.intern_stockmate.model.DebtorResponse
 import com.example.intern_stockmate.model.DebtorSummary
 import com.example.intern_stockmate.model.OutstandingDebtorItem
@@ -23,7 +24,7 @@ class DebtorInfoViewModel(
     fun fetchDebtorSummary() {
         _debtorState.value = DebtorInfoUiState.Loading
 
-        firestore.collection(COLLECTION_NAME)
+        CompanyContext.collection(firestore, COLLECTION_NAME)
             .document(DOCUMENT_NAME)
             .get()
             .addOnSuccessListener { snapshot ->

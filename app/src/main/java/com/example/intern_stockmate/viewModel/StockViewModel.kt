@@ -3,6 +3,7 @@ package com.example.intern_stockmate.viewModel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.intern_stockmate.data.CompanyContext
 import com.example.intern_stockmate.model.LocationInfo
 import com.example.intern_stockmate.model.StockItem
 import com.example.intern_stockmate.model.UomInfo
@@ -71,7 +72,7 @@ class StockViewModel(
     fun getStockList() {
         _stockState.value = StockUiState.Loading
 
-        firestore.collection(COLLECTION_NAME)
+        CompanyContext.collection(firestore, COLLECTION_NAME)
             .document(DOCUMENT_NAME)
             .get()
             .addOnSuccessListener { snapshot ->

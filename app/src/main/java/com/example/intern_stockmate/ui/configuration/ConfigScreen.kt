@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Lock
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.material.icons.filled.Business
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -28,6 +29,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,6 +40,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,23 +57,31 @@ import androidx.compose.ui.unit.sp
 import com.example.intern_stockmate.viewModel.LoginViewModel
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.intern_stockmate.viewModel.CompanyListUiState
+import com.example.intern_stockmate.viewModel.ConfigurationViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConfigScreen(
     innerPadding: PaddingValues,
     loginViewModel: LoginViewModel,
     scope: CoroutineScope
 ) {
+    val configurationViewModel: ConfigurationViewModel = viewModel()
+    val companyListState by configurationViewModel.companyListState.collectAsState()
+    val selectedCompanyId by configurationViewModel.selectedCompanyId.collectAsState()
+
+    var companyExpanded by remember { mutableStateOf(false) }
+
     var oldPassword by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
     var resetCode by remember { mutableStateOf("") }
     var oldPasswordVisible by remember { mutableStateOf(false) }
     var newPasswordVisible by remember { mutableStateOf(false) }
     var resetCodeVisible by remember { mutableStateOf(false) }
-    var statusMessage by remember { mutableStateOf<String?>(null) }
-    var resetStatusMessage by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
 
@@ -85,7 +99,7 @@ fun ConfigScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(innerPadding)
-            .background(Color(0xFFF8F9FA))
+            .background(Color.White)
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
             .clickable(
@@ -96,6 +110,72 @@ fun ConfigScreen(
             },
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
+        ManagementCard(title = "Company", icon = Icons.Default.Business) {
+            val companyOptions = when (val state = companyListState) {
+                is CompanyListUiState.Success -> state.companies
+                else -> emptyList()
+            }
+            val selectedDisplay = companyOptions
+                .firstOrNull { it.id == selectedCompanyId }
+                ?.displayName
+                ?: selectedCompanyId
+
+            ExposedDropdownMenuBox(
+                expanded = companyExpanded,
+                onExpandedChange = { companyExpanded = !companyExpanded }
+            ) {
+                OutlinedTextField(
+                    value = selectedDisplay,
+                    onValueChange = {},
+                    readOnly = true,
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = companyExpanded) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+                    colors = textFieldColors,
+                    shape = RoundedCornerShape(8.dp)
+                )
+
+                ExposedDropdownMenu(
+                    expanded = companyExpanded,
+                    onDismissRequest = { companyExpanded = false },
+                    modifier = Modifier.background(Color.White)
+                ) {
+                    companyOptions.forEach { company ->
+                        DropdownMenuItem(
+                            text = { Text(company.displayName, color = Color.Black) },
+                            onClick = {
+                                configurationViewModel.selectCompany(company.id)
+                                companyExpanded = false
+                                Toast.makeText(
+                                    context,
+                                    "Company changed to ${company.displayName}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        )
+                    }
+                }
+            }
+
+            when (companyListState) {
+                is CompanyListUiState.Loading -> {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Loading companies...", color = Color.Gray, fontSize = 12.sp)
+                }
+                is CompanyListUiState.Error -> {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = (companyListState as CompanyListUiState.Error).message,
+                        color = Color.Red,
+                        fontSize = 12.sp
+                    )
+                }
+                else -> Unit
+            }
+        }
+
+
         ManagementCard(title = "Change Password", icon = Icons.Default.Lock) {
 
             OutlinedTextField(
@@ -164,24 +244,7 @@ fun ConfigScreen(
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF3636))
             ) {
-                Text(
-                    text = "Update Password",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-            }
-
-            statusMessage?.let {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = it,
-                    color = Color.Red,
-                    fontSize = 12.sp,
-                    modifier = Modifier
-                        .padding(top = 12.dp)
-                        .align(Alignment.CenterHorizontally)
-                )
+                Text(text = "Update Password", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
             }
         }
 
@@ -214,7 +277,6 @@ fun ConfigScreen(
                         if (result.isSuccess) {
                             Toast.makeText(context, "Admin Password Reset to 'Admin'.", Toast.LENGTH_SHORT).show()
                             resetCode = ""
-                            resetStatusMessage = null
                         } else {
                             val errorMsg = result.exceptionOrNull()?.message ?: "Unable to Reset password"
                             Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
@@ -227,24 +289,7 @@ fun ConfigScreen(
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF3636))
             ) {
-                Text(
-                    text = "Reset Password",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-            }
-
-            resetStatusMessage?.let {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = it,
-                    color = Color.Red,
-                    fontSize = 12.sp,
-                    modifier = Modifier
-                        .padding(top = 12.dp)
-                        .align(Alignment.CenterHorizontally)
-                )
+                Text(text = "Reset Password", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
             }
         }
     }

@@ -7,6 +7,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.intern_stockmate.data.CompanyContext
 import com.example.intern_stockmate.data.local.StockAdjustmentDatabase
 import com.example.intern_stockmate.data.local.toEntity
 import com.example.intern_stockmate.data.local.toModel
@@ -19,6 +20,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
@@ -33,8 +35,8 @@ class StockAdjustmentViewModel(
     private val stockTakeRegex = Regex("^${stockTakePrefix}(\\d+)$")
     private val stockTakeDigits = 6
 
-    private val stockAdjustmentDao =
-        StockAdjustmentDatabase.getInstance(application).stockAdjustmentDao()
+    private var stockAdjustmentDao =
+        StockAdjustmentDatabase.getInstance(application, CompanyContext.selectedCompanyId.value).stockAdjustmentDao()
 
     val searchQuery: MutableStateFlow<String> = stockViewModel.searchQuery
     val locations: StateFlow<List<String>> = stockViewModel.locations
@@ -59,6 +61,24 @@ class StockAdjustmentViewModel(
 
     private val _isEditMode = MutableStateFlow(false)
     val isEditMode: StateFlow<Boolean> = _isEditMode.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            CompanyContext.selectedCompanyId
+                .collect { companyId ->
+                    stockAdjustmentDao = StockAdjustmentDatabase
+                        .getInstance(getApplication(), companyId)
+                        .stockAdjustmentDao()
+
+                    if (companyId.isBlank()) {
+                        _savedHeaders.value = emptyList()
+                        _selectedHeader.value = null
+                    } else {
+                        loadSavedAdjustmentsFromLocal()
+                    }
+                }
+        }
+    }
 
     fun prepareAdjustmentHeader(
         description: String,
@@ -185,7 +205,7 @@ class StockAdjustmentViewModel(
             return
         }
 
-        firestore.collection("stockAdjustments")
+        CompanyContext.collection(firestore, "stockAdjustments")
             .get()
             .addOnSuccessListener { snapshot ->
                 val firebaseMax = snapshot.documents
@@ -264,7 +284,7 @@ class StockAdjustmentViewModel(
     private fun markSubmittedDocumentAsKiv(stockTakeNo: String) {
         if (stockTakeNo.isBlank()) return
         val firestore = getFirestoreOrNull() ?: return
-        firestore.collection("stockAdjustments")
+        CompanyContext.collection(firestore, "stockAdjustments")
             .document(stockTakeNo)
             .set(
                 mapOf(
@@ -281,7 +301,7 @@ class StockAdjustmentViewModel(
     fun loadSavedAdjustmentsFromFirebase() {
         val firestore = getFirestoreOrNull() ?: return
 
-        firestore.collection("stockAdjustments")
+        CompanyContext.collection(firestore, "stockAdjustments")
             .get()
             .addOnSuccessListener { snapshot ->
                 val firebaseHeaders = snapshot.documents.mapNotNull { doc ->
@@ -347,7 +367,7 @@ class StockAdjustmentViewModel(
         }
 
         val stockTakeNo = header.stockTakeNo.ifBlank { "SUB-${UUID.randomUUID().toString().take(8)}" }
-        val docRef = firestore.collection("stockAdjustments").document(stockTakeNo)
+        val docRef = CompanyContext.collection(firestore, "stockAdjustments").document(stockTakeNo)
 
         val payload = mapOf(
             "description" to header.description,

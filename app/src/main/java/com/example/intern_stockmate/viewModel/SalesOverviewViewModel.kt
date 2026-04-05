@@ -2,6 +2,7 @@ package com.example.intern_stockmate.viewModel
 
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.lifecycle.ViewModel
+import com.example.intern_stockmate.data.CompanyContext
 import com.example.intern_stockmate.model.SalesOverviewSummaryData
 import com.example.intern_stockmate.model.SalesOverviewTodayData
 import com.google.firebase.firestore.FirebaseFirestore
@@ -51,7 +52,7 @@ class SalesOverviewViewModel(
     private fun fetchTodaySummary() {
         val todayDocId = LocalDate.now().format(TODAY_DOC_FORMATTER)
 
-        firestore.collection(DAILY_COLLECTION)
+        CompanyContext.collection(firestore, DAILY_COLLECTION)
             .document(DOCUMENT_NAME)
             .get()
             .addOnSuccessListener { snapshot ->
@@ -86,7 +87,7 @@ class SalesOverviewViewModel(
     }
 
     private fun fetchRangeSummary(documentId: String, rangeLabel: String) {
-        firestore.collection(SUMMARY_COLLECTION)
+        CompanyContext.collection(firestore, SUMMARY_COLLECTION)
             .document(documentId)
             .get()
             .addOnSuccessListener { snapshot ->

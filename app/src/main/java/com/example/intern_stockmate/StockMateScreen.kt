@@ -24,10 +24,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.text.font.FontWeight
 import com.example.intern_stockmate.ui.dashboard.MainScreenWithMenu
 import com.example.intern_stockmate.ui.configuration.ConfigScreen
 import com.example.intern_stockmate.ui.loginScreen.LogInScreen
+import com.example.intern_stockmate.data.CompanyContext
 import com.example.intern_stockmate.data.local.UserCredentialDatabase
 import com.example.intern_stockmate.viewModel.LoginViewModel
 import com.example.intern_stockmate.viewModel.LoginViewModelFactory
@@ -44,6 +46,10 @@ fun StockMateScreen() {
     var isLoggedIn by rememberSaveable { mutableStateOf(false) }
     var showConfigFromLogin by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        CompanyContext.initialize(context)
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),

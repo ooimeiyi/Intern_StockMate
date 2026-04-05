@@ -2,6 +2,7 @@ package com.example.intern_stockmate.viewModel
 
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.lifecycle.ViewModel
+import com.example.intern_stockmate.data.CompanyContext
 import com.example.intern_stockmate.model.HourlySales
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,7 +31,7 @@ class HourlySalesViewModel(
     fun fetchHourlySales(date: LocalDate = LocalDate.now()) {
         _hourlySalesState.value = HourlySalesUiState.Loading
 
-        firestore.collection(COLLECTION_NAME)
+        CompanyContext.collection(firestore, COLLECTION_NAME)
             .document(DOCUMENT_NAME)
             .get()
             .addOnSuccessListener { snapshot ->

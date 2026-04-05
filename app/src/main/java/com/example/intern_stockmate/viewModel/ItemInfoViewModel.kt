@@ -1,6 +1,7 @@
 package com.example.intern_stockmate.viewModel
 
 import androidx.lifecycle.ViewModel
+import com.example.intern_stockmate.data.CompanyContext
 import com.example.intern_stockmate.model.ItemInfo
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,7 +22,7 @@ class ItemInfoViewModel(
     fun fetchItemSummary() {
         _itemState.value = ItemInfoUiState.Loading
 
-        firestore.collection(COLLECTION_NAME)
+        CompanyContext.collection(firestore, COLLECTION_NAME)
             .document(DOCUMENT_NAME)
             .get()
             .addOnSuccessListener { snapshot ->
