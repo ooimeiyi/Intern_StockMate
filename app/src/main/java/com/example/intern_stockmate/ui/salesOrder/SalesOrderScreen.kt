@@ -120,7 +120,6 @@ fun SalesOrderScreen(
                                         color = if (header.status == "Submitted") Color(0xFF2E7D32) else Color(0xFFE65100)
                                     )
                                 }
-
                                 Spacer(modifier = Modifier.height(4.dp))
 
                                 Text(

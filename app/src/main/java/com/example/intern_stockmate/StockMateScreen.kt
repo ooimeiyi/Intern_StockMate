@@ -1,6 +1,5 @@
 package com.example.intern_stockmate
 
-
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Icon

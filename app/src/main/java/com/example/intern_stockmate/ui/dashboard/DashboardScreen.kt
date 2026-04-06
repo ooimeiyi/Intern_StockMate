@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,7 +29,6 @@ fun DashboardScreen(
             .fillMaxSize()
             .background(Color(0xFFF8F8F8))
     ) {
-
         item { SectionHeader("Operation Functions") }
 
         item {
@@ -111,7 +109,6 @@ fun DashboardScreen(
             }
         }
 
-
         item { SectionHeader("CRM & Account") }
 
         item {
@@ -135,7 +132,6 @@ fun DashboardScreen(
                     }
                 }
                 Spacer(Modifier.weight(1f))
-
             }
         }
 
@@ -151,7 +147,6 @@ fun DashboardScreen(
                 Box(Modifier.weight(1f)) {
                     DashboardCard("Contact Us", Icons.Default.Phone) {
                         onNavigate(HamburgerScreen.Contact)
-
                     }
                 }
             }
@@ -204,7 +199,6 @@ fun SectionHeader(title: String) {
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 12.dp)
     ) {
-        // Red Vertical Bar
         Box(
             modifier = Modifier
                 .width(4.dp)

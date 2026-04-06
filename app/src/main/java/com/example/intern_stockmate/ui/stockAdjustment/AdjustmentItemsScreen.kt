@@ -76,7 +76,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -88,7 +87,6 @@ import com.example.intern_stockmate.model.StockItem
 import com.example.intern_stockmate.scanner.QRCodeScanner
 import com.example.intern_stockmate.viewModel.StockAdjustmentViewModel
 import com.example.intern_stockmate.viewModel.StockViewModel
-import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import java.text.SimpleDateFormat
@@ -268,7 +266,6 @@ fun AdjustmentItemsScreen(
                     }
                 }
             }
-
             item {
                 Column(
                     modifier = Modifier
@@ -818,7 +815,6 @@ private fun PhysicalQtyNumberPadDialog(
 
                 Spacer(Modifier.height(12.dp))
 
-                // Input Display Box
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -836,11 +832,9 @@ private fun PhysicalQtyNumberPadDialog(
 
                 Spacer(Modifier.height(16.dp))
 
-                // Keypad Grid - 4 Columns
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     val rowMod = Modifier.fillMaxWidth()
 
-                    // Row 1: 1, 2, 3, Close (Red)
                     Row(rowMod, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         NumberPadKey("1", Modifier.weight(1f)) { appendValue("1") }
                         NumberPadKey("2", Modifier.weight(1f)) { appendValue("2") }
@@ -853,7 +847,6 @@ private fun PhysicalQtyNumberPadDialog(
                         ) { onDismiss() }
                     }
 
-                    // Row 2: 4, 5, 6, Backspace
                     Row(rowMod, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         NumberPadKey("4", Modifier.weight(1f)) { appendValue("4") }
                         NumberPadKey("5", Modifier.weight(1f)) { appendValue("5") }
@@ -863,7 +856,6 @@ private fun PhysicalQtyNumberPadDialog(
                         }
                     }
 
-                    // Row 3: 7, 8, 9, Clear (Red Text)
                     Row(rowMod, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         NumberPadKey("7", Modifier.weight(1f)) { appendValue("7") }
                         NumberPadKey("8", Modifier.weight(1f)) { appendValue("8") }
@@ -871,7 +863,6 @@ private fun PhysicalQtyNumberPadDialog(
                         NumberPadKey("C", Modifier.weight(1f), textColor = PadTextRed) { draft = "" }
                     }
 
-                    // Row 4: . , 0, OK (Green - Spans 2)
                     Row(rowMod, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         NumberPadKey(".", Modifier.weight(1f)) { appendValue(".") }
                         NumberPadKey("0", Modifier.weight(1f)) { appendValue("0") }
@@ -888,7 +879,6 @@ private fun PhysicalQtyNumberPadDialog(
     }
 }
 
-// Reuse the same helper composables for perfect consistency
 @Composable
 private fun NumberPadKey(
     text: String,

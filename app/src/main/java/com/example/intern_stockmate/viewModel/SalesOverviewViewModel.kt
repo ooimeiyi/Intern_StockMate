@@ -75,7 +75,6 @@ class SalesOverviewViewModel(
                     reportDate = snapshot.stringValue("reportDate").ifBlank { todayDocId },
                     lastUpdate = snapshot.stringValue("lastUpdate")
                 )
-
                 _uiState.value = SalesOverviewUiState.Success(todayData = todayData, summaryData = null)
             }
             .addOnFailureListener {
@@ -110,7 +109,6 @@ class SalesOverviewViewModel(
                         lastUpdate = snapshot.stringValue("lastUpdate")
                     )
                 }
-
                 _uiState.value = SalesOverviewUiState.Success(todayData = null, summaryData = summary)
             }
             .addOnFailureListener {
@@ -152,7 +150,6 @@ class SalesOverviewViewModel(
 
 sealed interface SalesOverviewUiState {
     data object Loading : SalesOverviewUiState
-
     data class Success(
         val todayData: SalesOverviewTodayData?,
         val summaryData: SalesOverviewSummaryData?

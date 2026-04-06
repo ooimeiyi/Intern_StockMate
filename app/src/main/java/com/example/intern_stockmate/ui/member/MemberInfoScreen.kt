@@ -42,9 +42,7 @@ fun MemberInfoScreenContainer(
             .fillMaxSize()
             .background(Color.White)
     ) {
-        MemberInfoScreen(
-            summary = summary
-        )
+        MemberInfoScreen(summary = summary)
 
         when (state) {
             is MemberInfoUiState.Loading -> {

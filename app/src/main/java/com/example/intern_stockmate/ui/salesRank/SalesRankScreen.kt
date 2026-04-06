@@ -99,7 +99,6 @@ private fun SalesRankScreen(state: SalesRankUiState, selectedTabIndex: Int) {
                 1 -> state.invoiceItems
                 else -> state.cashSalesItems
             }
-
             Column(
                 modifier = Modifier.fillMaxSize().padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)

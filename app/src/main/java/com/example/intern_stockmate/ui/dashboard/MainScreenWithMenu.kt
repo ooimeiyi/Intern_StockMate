@@ -67,7 +67,6 @@ fun MainScreenWithMenu(
 
     val isEditMode by stockAdjustmentViewModel.isEditMode.collectAsState()
     val isSalesOrderEditMode by salesOrderViewModel.isEditMode.collectAsState()
-
     val scope = rememberCoroutineScope()
 
     fun navigateToScreen(screen: HamburgerScreen) {
@@ -128,7 +127,6 @@ fun MainScreenWithMenu(
                                     tint = Color.White
                                 )
                             } else {
-                                // Home icon with square box
                                 Box(
                                     modifier = Modifier
                                         .size(40.dp)
@@ -224,7 +222,6 @@ fun MainScreenWithMenu(
                     SalesOverviewScreenContainer()
                 }
 
-
                 composable(HamburgerScreen.HourlySales.route) {
                     HourlySalesScreenContainer()
                 }
@@ -265,11 +262,9 @@ fun MainScreenWithMenu(
                     )
                 }
 
-
                 composable(HamburgerScreen.Contact.route) {
                     ContactScreen()
                 }
-
             }
         }
     }

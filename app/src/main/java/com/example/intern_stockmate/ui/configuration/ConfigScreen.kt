@@ -55,7 +55,6 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.intern_stockmate.viewModel.LoginViewModel
-import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.intern_stockmate.viewModel.CompanyListUiState
@@ -106,7 +105,7 @@ fun ConfigScreen(
                 indication = null,
                 interactionSource = remember { MutableInteractionSource() }
             ) {
-                focusManager.clearFocus() // hides keyboard
+                focusManager.clearFocus()
             },
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {

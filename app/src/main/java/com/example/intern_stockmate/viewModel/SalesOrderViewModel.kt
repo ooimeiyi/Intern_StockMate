@@ -7,7 +7,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.intern_stockmate.data.CompanyContext
-import com.example.intern_stockmate.data.local.SalesOrderDao
 import com.example.intern_stockmate.data.local.SalesOrderDatabase
 import com.example.intern_stockmate.data.local.toEntity
 import com.example.intern_stockmate.data.local.toModel
@@ -21,7 +20,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlin.math.max
 
 class SalesOrderViewModel(
@@ -42,7 +40,6 @@ class SalesOrderViewModel(
     )
 
     private val soPrefix = "SM-SO"
-
     private var salesOrderDao = daoForCurrentCompany()
     private val soRegex = Regex("^SM-SO(\\d+)$")
     private val soDigits = 5

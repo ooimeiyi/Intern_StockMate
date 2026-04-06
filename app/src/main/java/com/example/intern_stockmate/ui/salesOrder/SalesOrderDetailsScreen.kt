@@ -33,7 +33,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.Backspace
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
@@ -76,7 +75,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -88,8 +86,6 @@ import com.example.intern_stockmate.scanner.QRCodeScanner
 import com.example.intern_stockmate.viewModel.SalesOrderViewModel
 import com.example.intern_stockmate.viewModel.StockViewModel
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material.icons.filled.Calculate
 import java.text.SimpleDateFormat
@@ -430,7 +426,6 @@ fun SalesOrderDetailsScreen(
                     }
                 }
             }
-
             items(itemsToShow) { item ->
                 SalesOrderItemRow(
                     item = item,
@@ -485,7 +480,6 @@ fun SalesOrderDetailsScreen(
                         fontWeight = FontWeight.Bold,
                         color = Color.Black
                     )
-
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -914,7 +908,6 @@ fun SalesOrderNumberPadDialog(
                 }
                 Spacer(Modifier.height(12.dp))
 
-                // Input Display
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()

@@ -43,7 +43,7 @@ fun ContactScreen() {
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF5F5F5))
-            .verticalScroll(scrollState) // This makes the screen scrollable
+            .verticalScroll(scrollState)
             .padding(16.dp),
         contentAlignment = Alignment.TopCenter
     ) {
@@ -83,7 +83,6 @@ fun ContactScreen() {
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            // Info Container
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -107,7 +106,6 @@ fun ContactScreen() {
 
                     HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
 
-                    //address
                     ContactItem(
                         Icons.Default.LocationOn,
                         "No.B75, Taman Perindustrian Ringan Tandop Utama, Jalan Tandop 5, 05400 Alor Setar, Kedah"
@@ -122,7 +120,6 @@ fun ContactScreen() {
 
                     HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
 
-                    //website
                     ContactItem(
                         Icons.Default.Public, "https://www.shl-bsp.com/"
                     )
@@ -134,7 +131,6 @@ fun ContactScreen() {
 
                     HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
 
-                    //email
                     ContactItem(Icons.Default.Email, "support@shl-bsp.com")
                     {
                         val intent = Intent(Intent.ACTION_SENDTO).apply {
@@ -147,7 +143,6 @@ fun ContactScreen() {
 
                     HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
 
-                    //youtube channel
                     ContactItem(
                         Icons.Default.PlayCircle, "SHL Software Channel"
                     )
@@ -155,13 +150,11 @@ fun ContactScreen() {
                         val youtubeUrl = "https://youtube.com/@shlsoftware?si=6NxLwBqs0N-n7Ppq"
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(youtubeUrl))
 
-                        // This helps Android try to open the YouTube app specifically if available
                         intent.setPackage("com.google.android.youtube")
 
                         try {
                             context.startActivity(intent)
                         } catch (e: Exception) {
-                            // If YouTube app is not installed, open in browser instead
                             val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(youtubeUrl))
                             context.startActivity(browserIntent)
                         }
@@ -170,7 +163,6 @@ fun ContactScreen() {
             }
             Spacer(modifier = Modifier.height(24.dp))
 
-            // SUPPORT HOTLINE SECTION
             Text(
                 text = "SUPPORT HOTLINE",
                 modifier = Modifier.fillMaxWidth().padding(start = 4.dp, bottom = 8.dp),
@@ -185,7 +177,6 @@ fun ContactScreen() {
                 border = BorderStroke(1.dp, Color.Black.copy(alpha = 0.5f))
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    // Creates a 2-column grid
                     supportNumbers.chunked(2).forEach { rowItems ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -202,7 +193,6 @@ fun ContactScreen() {
                                     }
                                 )
                             }
-                            // Fill empty space if odd number of items
                             if (rowItems.size == 1) Spacer(modifier = Modifier.weight(1f))
                         }
                         Spacer(modifier = Modifier.height(8.dp))
@@ -210,7 +200,6 @@ fun ContactScreen() {
                 }
             }
             Spacer(modifier = Modifier.height(32.dp))
-            //copyright text
             Text(
                 text = "Copyright 2026 @ SHL Business Solutions Sdn Bhd",
                 fontSize = 12.sp,
@@ -227,7 +216,7 @@ fun ContactItem(icon: ImageVector, text: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() } // Makes the whole row clickable
+            .clickable { onClick() }
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

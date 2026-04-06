@@ -96,7 +96,6 @@ fun SalesOverviewScreenContainer(
                 lastUpdate = if (lastUpdate.isBlank()) "N/A" else lastUpdate,
                 tabTitle = SalesOverviewViewModel.TABS[selectedTabIndex]
             )
-
             if (state is SalesOverviewUiState.Loading) {
                 Box(
                     modifier = Modifier
@@ -199,7 +198,6 @@ private fun SalesDashboardScreen(
             isLocked = isLocked,
             onLockChange = { isLocked = it }
         )
-
         Text(
             text = "BREAKDOWN",
             fontSize = 14.sp,
@@ -207,7 +205,6 @@ private fun SalesDashboardScreen(
             color = Color.Black,
             modifier = Modifier.padding(top = 8.dp)
         )
-
         segments.forEach { segment ->
             DetailedBreakdownCard(
                 title = segment.name,

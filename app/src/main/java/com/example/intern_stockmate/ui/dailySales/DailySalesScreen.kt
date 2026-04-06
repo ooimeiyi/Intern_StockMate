@@ -179,7 +179,6 @@ private fun DailySalesScreen(
                 }
             }
         }
-
         DailyTrendCard(
             data = salesData,
             selectedTabIndex = selectedTabIndex,

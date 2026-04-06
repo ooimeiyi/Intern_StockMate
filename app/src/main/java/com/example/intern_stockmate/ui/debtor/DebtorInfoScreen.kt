@@ -60,7 +60,6 @@ fun DebtorInfoScreenContainer(
             summary = summary,
             outstandingDebtorList = outstandingList
         )
-
         when (state) {
             is DebtorInfoUiState.Loading -> {
                 Box(
@@ -168,7 +167,6 @@ fun DebtorInfoScreen(
                 Text(if (isExpanded) "^" else "v", fontWeight = FontWeight.Bold)
             }
         }
-
         Text(
             text = "OUTSTANDING LIST",
             fontSize = 14.sp,
@@ -178,7 +176,6 @@ fun DebtorInfoScreen(
                 .align(Alignment.Start)
                 .padding(top = 8.dp)
         )
-
         if (isExpanded) {
             OutstandingDebtorListSection(items = outstandingDebtorList)
         }

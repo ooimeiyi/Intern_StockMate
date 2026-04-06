@@ -27,8 +27,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import com.example.intern_stockmate.R
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.focus.FocusManager
-import androidx.compose.ui.focus.focusModifier
 import androidx.compose.ui.platform.LocalFocusManager
 import android.widget.Toast
 import androidx.compose.foundation.clickable
@@ -60,7 +58,7 @@ fun LogInScreen(
                 indication = null,
                 interactionSource = remember { MutableInteractionSource() }
             ) {
-                focusManager.clearFocus() // Hides keyboard
+                focusManager.clearFocus()
             }
     ) {
 
@@ -202,7 +200,6 @@ fun LogInScreen(
                     }
                 }
             }
-
             Text(
                 text = "Default: Admin / Admin",
                 fontSize = 12.sp,

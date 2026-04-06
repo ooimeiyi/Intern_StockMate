@@ -78,293 +78,294 @@ fun StockDetailScreen(
             .background(Color.White)
             .verticalScroll(scrollState)
     ) {
-            Box(
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .height(220.dp)
+                .background(Color.White)
+        ) {
+            val painter = when {
+                selectedImageUri != null -> rememberAsyncImagePainter(selectedImageUri)
+                !item.itemPhoto.isNullOrBlank() -> {
+                    runCatching { base64ToBitmap(item.itemPhoto).asImageBitmap() }.getOrNull()
+                        ?.let { androidx.compose.ui.graphics.painter.BitmapPainter(it) }
+                        ?: painterResource(id = R.drawable.stock_mate_logo)
+                }
+                else -> painterResource(id = R.drawable.stock_mate_logo)
+            }
+            Image(
+                painter = painter,
+                contentDescription = null,
                 modifier = Modifier
-                    .fillMaxSize()
-                    .height(220.dp)
-                    .background(Color.White)
+                    .size(180.dp)
+                    .align(Alignment.Center)
+                    .background(Color.White),
+                contentScale = ContentScale.Crop
+            )
+            Surface(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .align(Alignment.TopStart),
+                color = Color.LightGray,
+                shape = RoundedCornerShape(8.dp)
             ) {
-                val painter = when {
-                    selectedImageUri != null -> rememberAsyncImagePainter(selectedImageUri)
-                    !item.itemPhoto.isNullOrBlank() -> {
-                        runCatching { base64ToBitmap(item.itemPhoto).asImageBitmap() }.getOrNull()
-                            ?.let { androidx.compose.ui.graphics.painter.BitmapPainter(it) }
-                            ?: painterResource(id = R.drawable.stock_mate_logo)
-                    }
-                    else -> painterResource(id = R.drawable.stock_mate_logo)
-                }
-                Image(
-                    painter = painter,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(180.dp)
-                        .align(Alignment.Center)
-                        .background(Color.White),
-                    contentScale = ContentScale.Crop
-                )
-                Surface(
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .align(Alignment.TopStart),
-                    color = Color.LightGray,
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        text = if (item.itemGroup.isNullOrBlank()) "N/A" else item.itemGroup,
-                        color = Color.White,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                    )
-                }
-                IconButton(
-                    onClick = {
-                        imagePickerLauncher.launch("image/*")
-                    },
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .align(Alignment.TopEnd)
-                        .background(Color.White, CircleShape)
-                ) {
-                    Icon(Icons.Default.Edit, contentDescription = null, tint = Color.Black)
-                }
-                Surface(
-                    modifier = Modifier.padding(16.dp).align(Alignment.BottomEnd),
+                Text(
+                    text = if (item.itemGroup.isNullOrBlank()) "N/A" else item.itemGroup,
                     color = Color.White,
-                    shape = RoundedCornerShape(4.dp)
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                )
+            }
+            IconButton(
+                onClick = {
+                    imagePickerLauncher.launch("image/*")
+                },
+                modifier = Modifier
+                    .padding(16.dp)
+                    .align(Alignment.TopEnd)
+                    .background(Color.White, CircleShape)
+            ) {
+                Icon(Icons.Default.Edit, contentDescription = null, tint = Color.Black)
+            }
+            Surface(
+                modifier = Modifier.padding(16.dp).align(Alignment.BottomEnd),
+                color = Color.White,
+                shape = RoundedCornerShape(4.dp)
+            ) {
+                Text(
+                    text = item.uom.uppercase(),
+                    color = Color.Red,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
+        }
+
+        HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray)
+
+        Column(modifier = Modifier.padding(20.dp)) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Item Code: ${item.itemCode.ifBlank { "-" }}",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+                Text(
+                    text = "Desc 1: ${item.description.ifBlank { "-" }}",
+                    fontSize = 16.sp,
+                    color = Color.DarkGray
+                )
+                Text(
+                    text = "Desc 2: ${item.desc2?.ifBlank { "-" } ?: "-"}",
+                    fontSize = 16.sp,
+                    color = Color.DarkGray
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                InfoCard(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                    icon = Icons.Default.Inventory2,
+                    label = "Stock Balance",
+                    value = item.balQty.toString(),
+                )
+
+                InfoCard(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                    icon = Icons.Default.LocationOn,
+                    label = "Shelf",
+                    value = "",
                 ) {
-                    Text(
-                        text = item.uom.uppercase(),
-                        color = Color.Red,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(
+                            text = "Shelf   : ${item.shelf?.ifBlank { "N/A" } ?: "N/A"}",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+                        Text(
+                            text = "Active : ${item.isActive ?: "Yes"}",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+                    }
                 }
             }
 
-            HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray)
+            Spacer(modifier = Modifier.height(24.dp))
 
-            Column(modifier = Modifier.padding(20.dp)) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = "Item Code: ${item.itemCode.ifBlank { "-" }}",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    )
-                    Text(
-                        text = "Desc 1: ${item.description.ifBlank { "-" }}",
-                        fontSize = 16.sp,
-                        color = Color.DarkGray
-                    )
-                    Text(
-                        text = "Desc 2: ${item.desc2?.ifBlank { "-" } ?: "-"}",
-                        fontSize = 16.sp,
-                        color = Color.DarkGray
-                    )
-                }
+            val pricingScrollState = rememberScrollState()
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Row(
+            SectionHeader(icon = Icons.Default.Inventory2, title = "UOM & Pricing")
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(0.5.dp, Color.LightGray)
+            ) {
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(IntrinsicSize.Min),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        .horizontalScroll(pricingScrollState)
                 ) {
-                    InfoCard(
+                    Row(
                         modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight(),
-                        icon = Icons.Default.Inventory2,
-                        label = "Stock Balance",
-                        value = item.balQty.toString(),
-                    )
-
-                    InfoCard(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight(),
-                        icon = Icons.Default.LocationOn,
-                        label = "Shelf",
-                        value = "",
+                            .width(650.dp)
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Text(
-                                text = "Shelf   : ${item.shelf?.ifBlank { "N/A" } ?: "N/A"}",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.Black
-                            )
-                            Text(
-                                text = "Active : ${item.isActive ?: "Yes"}",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.Black
-                            )
-                        }
+                        Text(
+                            "UOM",
+                            modifier = Modifier.width(70.dp),
+                            fontSize = 13.sp,
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            "RATE",
+                            modifier = Modifier.width(60.dp),
+                            fontSize = 11.sp,
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            "PRICE 1",
+                            modifier = Modifier.width(85.dp),
+                            fontSize = 11.sp,
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            "PRICE 2",
+                            modifier = Modifier.width(85.dp),
+                            fontSize = 11.sp,
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            "PRICE 3",
+                            modifier = Modifier.width(85.dp),
+                            fontSize = 11.sp,
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            "PRICE 4",
+                            modifier = Modifier.width(85.dp),
+                            fontSize = 11.sp,
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            "PRICE 5",
+                            modifier = Modifier.width(85.dp),
+                            fontSize = 11.sp,
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            "PRICE 6",
+                            modifier = Modifier.width(85.dp),
+                            fontSize = 11.sp,
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
-                }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                    HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray)
 
-                val pricingScrollState = rememberScrollState()
-
-                SectionHeader(icon = Icons.Default.Inventory2, title = "UOM & Pricing")
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = BorderStroke(0.5.dp, Color.LightGray)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(pricingScrollState)
-                    ) {
+                    item.uomList.forEach { uomInfo ->
                         Row(
                             modifier = Modifier
                                 .width(650.dp)
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                                .padding(horizontal = 12.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                "UOM",
+                                uomInfo.uom,
                                 modifier = Modifier.width(70.dp),
-                                fontSize = 13.sp,
+                                fontSize = 14.sp,
                                 color = Color.Black,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                "RATE",
+                                uomInfo.rate.toInt().toString(),
                                 modifier = Modifier.width(60.dp),
-                                fontSize = 11.sp,
-                                color = Color.Black,
-                                fontWeight = FontWeight.Bold
+                                fontSize = 14.sp,
+                                color = Color.Black
                             )
-                            Text(
-                                "PRICE 1",
-                                modifier = Modifier.width(85.dp),
-                                fontSize = 11.sp,
-                                color = Color.Black,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                "PRICE 2",
-                                modifier = Modifier.width(85.dp),
-                                fontSize = 11.sp,
-                                color = Color.Black,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                "PRICE 3",
-                                modifier = Modifier.width(85.dp),
-                                fontSize = 11.sp,
-                                color = Color.Black,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                "PRICE 4",
-                                modifier = Modifier.width(85.dp),
-                                fontSize = 11.sp,
-                                color = Color.Black,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                "PRICE 5",
-                                modifier = Modifier.width(85.dp),
-                                fontSize = 11.sp,
-                                color = Color.Black,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                "PRICE 6",
-                                modifier = Modifier.width(85.dp),
-                                fontSize = 11.sp,
-                                color = Color.Black,
-                                fontWeight = FontWeight.Bold
-                            )
+                            PriceCell(uomInfo.price1)
+                            PriceCell(uomInfo.price2)
+                            PriceCell(uomInfo.price3)
+                            PriceCell(uomInfo.price4)
+                            PriceCell(uomInfo.price5)
+                            PriceCell(uomInfo.price6)
                         }
-
-                        HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray)
-
-                        item.uomList.forEach { uomInfo ->
-                            Row(
-                                modifier = Modifier
-                                    .width(650.dp)
-                                    .padding(horizontal = 12.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    uomInfo.uom,
-                                    modifier = Modifier.width(70.dp),
-                                    fontSize = 14.sp,
-                                    color = Color.Black,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    uomInfo.rate.toInt().toString(),
-                                    modifier = Modifier.width(60.dp),
-                                    fontSize = 14.sp,
-                                    color = Color.Black
-                                )
-                                PriceCell(uomInfo.price1)
-                                PriceCell(uomInfo.price2)
-                                PriceCell(uomInfo.price3)
-                                PriceCell(uomInfo.price4)
-                                PriceCell(uomInfo.price5)
-                                PriceCell(uomInfo.price6)
-                            }
-                            HorizontalDivider(
-                                modifier = Modifier.width(650.dp),
-                                thickness = 0.5.dp,
-                                color = Color.LightGray.copy(alpha = 0.5f)
-                            )
-                        }
+                        HorizontalDivider(
+                            modifier = Modifier.width(650.dp),
+                            thickness = 0.5.dp,
+                            color = Color.LightGray.copy(alpha = 0.5f)
+                        )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                SectionHeader(icon = Icons.Default.LocationOn, title = "Stock by Location")
-                Card(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = BorderStroke(0.5.dp, Color.LightGray)
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
-                            Text(
-                                "LOCATION",
-                                modifier = Modifier.weight(1f),
-                                fontSize = 12.sp,
-                                color = Color.Black,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                "QTY",
-                                modifier = Modifier.width(60.dp),
-                                fontSize = 12.sp,
-                                color = Color.Black,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray)
-
-                        item.locationList.forEach { locInfo ->
-                            LocationDetailRow(
-                                location = locInfo.location,
-                                qty = locInfo.qty.toString()
-                            )
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.height(24.dp))
             }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            SectionHeader(icon = Icons.Default.LocationOn, title = "Stock by Location")
+
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(0.5.dp, Color.LightGray)
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+                        Text(
+                            "LOCATION",
+                            modifier = Modifier.weight(1f),
+                            fontSize = 12.sp,
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            "QTY",
+                            modifier = Modifier.width(60.dp),
+                            fontSize = 12.sp,
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray)
+
+                    item.locationList.forEach { locInfo ->
+                        LocationDetailRow(
+                            location = locInfo.location,
+                            qty = locInfo.qty.toString()
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
+}
 
 
 @Composable

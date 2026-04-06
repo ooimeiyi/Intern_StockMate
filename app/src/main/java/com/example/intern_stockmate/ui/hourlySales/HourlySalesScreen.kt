@@ -74,7 +74,6 @@ fun HourlySalesScreenContainer(viewModel: HourlySalesViewModel = viewModel()) {
             sales.copy(amount = amount)
         }
     }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -87,7 +86,6 @@ fun HourlySalesScreenContainer(viewModel: HourlySalesViewModel = viewModel()) {
             )
             HourlySalesScreen(processedData, selectedTabIndex)
         }
-
         when (state) {
             is HourlySalesUiState.Loading -> {
                 Box(

@@ -64,7 +64,6 @@ import com.example.intern_stockmate.viewModel.StockViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.platform.LocalFocusManager
 
 @Composable
@@ -88,10 +87,10 @@ fun StockListScreenContainer(
             .fillMaxSize()
             .background(Color.White)
             .clickable(
-                indication = null, // no ripple
+                indication = null,
                 interactionSource = remember { MutableInteractionSource() }
             ) {
-                focusManager.clearFocus() // hides keyboard
+                focusManager.clearFocus()
             }
     ) {
         val itemsList = if (state is StockUiState.Success) filteredItems else emptyList()
@@ -274,7 +273,6 @@ fun StockListScreen(
             }
         }
     }
-
     QRCodeScanner(
         scanning = scanning,
         onResult = { scannedValue ->
