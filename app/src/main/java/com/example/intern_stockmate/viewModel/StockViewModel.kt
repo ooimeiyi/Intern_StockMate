@@ -7,6 +7,7 @@ import com.example.intern_stockmate.data.CompanyContext
 import com.example.intern_stockmate.model.LocationInfo
 import com.example.intern_stockmate.model.StockItem
 import com.example.intern_stockmate.model.UomInfo
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -89,33 +90,33 @@ class StockViewModel(
         _stockState.value = StockUiState.Loading
 
         CompanyContext.collection(firestore, COLLECTION_NAME)
-            .document(DOCUMENT_NAME)
             .get()
-            .addOnSuccessListener { snapshot ->
-                if (!snapshot.exists()) {
-                    clearStockData()
-                    _stockState.value = StockUiState.Error("Stock list document was not found.")
-                    return@addOnSuccessListener
-                }
-
-                val rawItems = snapshot.get("stockItems") as? List<Map<String, Any?>>
-                if (rawItems.isNullOrEmpty()) {
+            .addOnSuccessListener { querySnapshot ->
+                if (querySnapshot.isEmpty) {
                     clearStockData()
                     _stockState.value = StockUiState.Error("No stock items found in Firebase.")
                     return@addOnSuccessListener
                 }
 
-                val parsed = rawItems.map { it.toStockItem() }
-                val grouped = groupStockItems(parsed)
-                _allItems.value = grouped
-                _locations.value = grouped.flatMap { item -> item.locationList.map { it.location } }
+                val parsed = querySnapshot.documents.map { it.toStockItem() }
+                    .filter { it.itemCode.isNotBlank() }
+
+                if (parsed.isEmpty()) {
+                    clearStockData()
+                    _stockState.value = StockUiState.Error("Stock documents were found, but item data is empty.")
+                    return@addOnSuccessListener
+                }
+
+                _allItems.value = parsed
+                _locations.value = parsed
+                    .flatMap { item -> item.locationList.map { it.location } }
                     .filter { it.isNotBlank() }
                     .distinct()
                     .sorted()
-                if (_selectedLocation.value.isBlank() && _locations.value.isNotEmpty()) {
-                    _selectedLocation.value = _locations.value.first()
+                if (_selectedLocation.value.isNotBlank() && _selectedLocation.value !in _locations.value) {
+                    _selectedLocation.value = ""
                 }
-                _stockState.value = StockUiState.Success(grouped)
+                _stockState.value = StockUiState.Success(parsed)
             }
             .addOnFailureListener { error ->
                 Log.e(TAG, "Failed to load stock list", error)
@@ -132,104 +133,94 @@ class StockViewModel(
         _selectedLocation.value = ""
     }
 
-    private fun groupStockItems(rawList: List<StockItem>): List<StockItem> {
-        return rawList
-            .groupBy { it.itemCode }
-            .map { (_, records) ->
-                val base = records.first()
+    private fun DocumentSnapshot.toStockItem(): StockItem {
+        val payload = data.orEmpty()
 
-                val uniqueUoms = records
-                    .distinctBy { it.uom }
-                    .map {
-                        UomInfo(
-                            uom = it.uom,
-                            rate = it.rate ?: 1.0,
-                            price1 = it.price,
-                            price2 = it.price2 ?: 0.0,
-                            price3 = it.price3 ?: 0.0,
-                            price4 = it.price4 ?: 0.0,
-                            price5 = it.price5 ?: 0.0,
-                            price6 = it.price6 ?: 0.0,
-                            barCode = it.barCode
-                        )
-                    }
+        val uomMaps = payload["uoms"] as? List<*>
+        val uomList = uomMaps.orEmpty().mapNotNull { entry ->
+            val map = entry as? Map<*, *> ?: return@mapNotNull null
+            UomInfo(
+                uom = map.string("uom", "UNIT"),
+                rate = map.double("rate", 1.0),
+                price1 = map.double("price"),
+                price2 = map.double("price2"),
+                price3 = map.double("price3"),
+                price4 = map.double("price4"),
+                price5 = map.double("price5"),
+                price6 = map.double("price6"),
+                barCode = map.nullableString("barCode")
+            )
+        }.distinctBy { it.uom.uppercase() }
 
-                val uniqueLocations = records
-                    .filter { it.location.isNotBlank() }
-                    .distinctBy { it.location }
-                    .map { LocationInfo(it.location, it.balQty) }
+        val locationList = uomMaps.orEmpty().mapNotNull { entry ->
+            val map = entry as? Map<*, *> ?: return@mapNotNull null
+            val location = map.string("location")
+            if (location.isBlank()) return@mapNotNull null
+            LocationInfo(
+                location = location,
+                qty = map.int("balQty")
+            )
+        }.distinctBy { it.location }
 
-                base.copy(
-                    uomList = uniqueUoms,
-                    locationList = uniqueLocations,
-                    balQty = uniqueLocations.sumOf { it.qty }
-                )
-            }
-            .sortedBy { it.itemCode }
-    }
-
-    private fun Map<String, Any?>.toStockItem(): StockItem {
         return StockItem(
-            itemCode = string("itemCode"),
-            description = string("description"),
-            desc2 = nullableString("desc2"),
-            isActive = nullableString("isActive"),
-            itemGroup = nullableString("itemGroup"),
-            uom = string("uom"),
-            rate = nullableDouble("rate"),
-            price = double("price"),
-            price2 = nullableDouble("price2"),
-            price3 = nullableDouble("price3"),
-            price4 = nullableDouble("price4"),
-            price5 = nullableDouble("price5"),
-            price6 = nullableDouble("price6"),
-            shelf = nullableString("shelf"),
-            barCode = nullableString("barCode"),
-            balQty = int("balQty"),
-            location = string("location"),
-            itemPhoto = nullableString("itemPhoto")
+            itemCode = payload.string("itemCode").ifBlank { id },
+            description = payload.string("description"),
+            desc2 = payload.nullableString("desc2"),
+            isActive = payload.nullableString("isActive"),
+            itemGroup = payload.nullableString("itemGroup"),
+            uom = uomList.firstOrNull()?.uom ?: "UNIT",
+            rate = uomList.firstOrNull()?.rate ?: 1.0,
+            price = uomList.firstOrNull()?.price1 ?: 0.0,
+            price2 = uomList.firstOrNull()?.price2 ?: 0.0,
+            price3 = uomList.firstOrNull()?.price3 ?: 0.0,
+            price4 = uomList.firstOrNull()?.price4 ?: 0.0,
+            price5 = uomList.firstOrNull()?.price5 ?: 0.0,
+            price6 = uomList.firstOrNull()?.price6 ?: 0.0,
+            shelf = uomMaps.orEmpty().firstMapValue("shelf"),
+            barCode = uomMaps.orEmpty().firstMapValue("barCode"),
+            balQty = locationList.sumOf { it.qty },
+            location = locationList.firstOrNull()?.location.orEmpty(),
+            itemPhoto = payload.nullableString("itemPhoto"),
+            uomList = uomList,
+            locationList = locationList
         )
     }
 
-    private fun Map<String, Any?>.string(key: String, default: String = ""): String =
+    private fun Map<*, *>.string(key: String, default: String = ""): String =
         when (val value = this[key]) {
             is String -> value
             is Number -> value.toString()
             else -> default
         }
 
-    private fun Map<String, Any?>.nullableString(key: String): String? =
+    private fun Map<*, *>.nullableString(key: String): String? =
         when (val value = this[key]) {
             is String -> value
             is Number -> value.toString()
             else -> null
         }
 
-    private fun Map<String, Any?>.double(key: String, default: Double = 0.0): Double =
+    private fun Map<*, *>.double(key: String, default: Double = 0.0): Double =
         when (val value = this[key]) {
             is Number -> value.toDouble()
             is String -> value.toDoubleOrNull() ?: default
             else -> default
         }
 
-    private fun Map<String, Any?>.nullableDouble(key: String): Double? =
-        when (val value = this[key]) {
-            is Number -> value.toDouble()
-            is String -> value.toDoubleOrNull()
-            else -> null
-        }
-
-    private fun Map<String, Any?>.int(key: String, default: Int = 0): Int =
+    private fun Map<*, *>.int(key: String, default: Int = 0): Int =
         when (val value = this[key]) {
             is Number -> value.toInt()
             is String -> value.toIntOrNull() ?: default
             else -> default
         }
 
+    private fun List<*>.firstMapValue(key: String): String? =
+        firstNotNullOfOrNull { (it as? Map<*, *>)?.nullableString(key) }
+
+
     private companion object {
         const val TAG = "StockViewModel"
         const val COLLECTION_NAME = "StockList"
-        const val DOCUMENT_NAME = "Current"
     }
 }
 
