@@ -93,12 +93,14 @@ class StockViewModel(
             .get()
             .addOnSuccessListener { snapshot ->
                 if (!snapshot.exists()) {
+                    clearStockData()
                     _stockState.value = StockUiState.Error("Stock list document was not found.")
                     return@addOnSuccessListener
                 }
 
                 val rawItems = snapshot.get("stockItems") as? List<Map<String, Any?>>
                 if (rawItems.isNullOrEmpty()) {
+                    clearStockData()
                     _stockState.value = StockUiState.Error("No stock items found in Firebase.")
                     return@addOnSuccessListener
                 }
@@ -117,10 +119,17 @@ class StockViewModel(
             }
             .addOnFailureListener { error ->
                 Log.e(TAG, "Failed to load stock list", error)
+                clearStockData()
                 _stockState.value = StockUiState.Error(
                     error.message ?: "Failed to load stock list from Firebase."
                 )
             }
+    }
+
+    private fun clearStockData() {
+        _allItems.value = emptyList()
+        _locations.value = emptyList()
+        _selectedLocation.value = ""
     }
 
     private fun groupStockItems(rawList: List<StockItem>): List<StockItem> {
@@ -166,7 +175,7 @@ class StockViewModel(
             desc2 = nullableString("desc2"),
             isActive = nullableString("isActive"),
             itemGroup = nullableString("itemGroup"),
-            uom = string("uom", "UNIT"),
+            uom = string("uom"),
             rate = nullableDouble("rate"),
             price = double("price"),
             price2 = nullableDouble("price2"),

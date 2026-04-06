@@ -60,16 +60,39 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
                     ?.sortedBy { it.displayName }
                     .orEmpty()
 
-                if (companiesFromDocuments.isNotEmpty()) {
-                    applyCompanySelection(companiesFromDocuments)
-                    return@addSnapshotListener
-                }
 
-                detectCompaniesFromSubcollections()
+                detectCompaniesFromSubcollections(
+                    onSuccess = { detectedOptions ->
+                        val mergedCompanies = (companiesFromDocuments + detectedOptions)
+                            .distinctBy { it.id }
+                            .sortedBy { it.displayName }
+
+                        if (mergedCompanies.isEmpty()) {
+                            _companyListState.value = CompanyListUiState.Error(
+                                "No company documents found. If your companies only have subcollections, add at least one field to each Companies/{companyId} document."
+                            )
+                            return@detectCompaniesFromSubcollections
+                        }
+
+                        applyCompanySelection(mergedCompanies)
+                    },
+                    onFailure = { detectError ->
+                        if (companiesFromDocuments.isNotEmpty()) {
+                            applyCompanySelection(companiesFromDocuments)
+                        } else {
+                            _companyListState.value = CompanyListUiState.Error(
+                                detectError.message ?: "Unable to detect companies"
+                            )
+                        }
+                    }
+                )
             }
     }
 
-    private fun detectCompaniesFromSubcollections() {
+    private fun detectCompaniesFromSubcollections(
+        onSuccess: (List<CompanyOption>) -> Unit,
+        onFailure: (Throwable) -> Unit
+    ) {
         val tasks = COMPANY_SUBCOLLECTION_HINTS.map { subcollection ->
             firestore.collectionGroup(subcollection).limit(30).get()
         }
@@ -84,22 +107,13 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
                     .distinct()
                     .sorted()
 
-                if (detectedCompanyIds.isEmpty()) {
-                    _companyListState.value = CompanyListUiState.Error(
-                        "No company documents found. If your companies only have subcollections, add at least one field to each Companies/{companyId} document."
-                    )
-                    return@addOnSuccessListener
-                }
-
                 val detectedOptions = detectedCompanyIds.map { companyId ->
                     CompanyOption(id = companyId, displayName = companyId)
                 }
-                applyCompanySelection(detectedOptions)
+                onSuccess(detectedOptions)
             }
             .addOnFailureListener { error ->
-                _companyListState.value = CompanyListUiState.Error(
-                    error.message ?: "Unable to detect companies"
-                )
+                onFailure(error)
             }
     }
 
