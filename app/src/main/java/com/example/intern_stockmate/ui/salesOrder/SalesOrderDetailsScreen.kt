@@ -88,6 +88,7 @@ import com.example.intern_stockmate.viewModel.StockViewModel
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.runtime.DisposableEffect
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -126,10 +127,11 @@ fun SalesOrderDetailsScreen(
     val manuallySelectedCodes = remember { mutableStateListOf<String>() }
     val sessionTrackedCodes = remember { mutableStateListOf<String>() }
     var pickerSelectedCode by remember { mutableStateOf<String?>(null) }
+    var previousLocation by remember { mutableStateOf(selectedLocation) }
     val focusManager = LocalFocusManager.current
 
     LaunchedEffect(locations, selectedLocation) {
-        if (locations.isNotEmpty() && selectedLocation.isBlank()) {
+        if (selectedHeader == null && locations.isNotEmpty() && selectedLocation.isBlank()) {
             salesOrderViewModel.onLocationSelected(locations.first())
         }
     }
@@ -137,6 +139,27 @@ fun SalesOrderDetailsScreen(
     LaunchedEffect(debtors, selectedHeader) {
         if (debtor.isBlank() && debtors.isNotEmpty() && selectedHeader == null) {
             debtor = debtors.first()
+        }
+    }
+
+    LaunchedEffect(selectedLocation) {
+        if (previousLocation.isNotBlank() && previousLocation != selectedLocation) {
+            val matchingCodes = allItems
+                .filter { stockItem ->
+                    stockItem.locationList.any { locationInfo -> locationInfo.location == selectedLocation }
+                }
+                .map { it.itemCode }
+                .toSet()
+            manuallySelectedCodes.removeAll { it !in matchingCodes }
+            sessionTrackedCodes.removeAll { it !in matchingCodes }
+            pickerSelectedCode = null
+        }
+        previousLocation = selectedLocation
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            stockViewModel.clearLocationSelection()
         }
     }
 

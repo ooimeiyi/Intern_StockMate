@@ -46,7 +46,16 @@ class StockAdjustmentViewModel(
     }
 
     fun onLocationSelected(location: String) {
+        if (stockViewModel.selectedLocation.value == location) return
         stockViewModel.onLocationSelected(location)
+        stockViewModel.onSearchQueryChange("")
+        physicalCounts.clear()
+        diffCounts.clear()
+
+        val current = _selectedHeader.value
+        if (current != null) {
+            _selectedHeader.value = current.copy(location = location)
+        }
     }
 
     val physicalCounts = mutableStateMapOf<String, String>()

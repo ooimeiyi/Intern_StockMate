@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 class StockViewModel(
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
@@ -58,7 +59,18 @@ class StockViewModel(
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     init {
-        getStockList()
+        viewModelScope.launch {
+            CompanyContext.selectedCompanyId.collect { companyId ->
+                if (companyId.isBlank()) {
+                    _allItems.value = emptyList()
+                    _locations.value = emptyList()
+                    _selectedLocation.value = ""
+                    _stockState.value = StockUiState.Error("No company selected.")
+                } else {
+                    getStockList()
+                }
+            }
+        }
     }
 
     fun onSearchQueryChange(query: String) {
@@ -67,6 +79,10 @@ class StockViewModel(
 
     fun onLocationSelected(location: String) {
         _selectedLocation.value = location
+    }
+
+    fun clearLocationSelection() {
+        _selectedLocation.value = ""
     }
 
     fun getStockList() {

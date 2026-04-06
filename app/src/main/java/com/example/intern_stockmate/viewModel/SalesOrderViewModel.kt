@@ -81,7 +81,15 @@ class SalesOrderViewModel(
     }
 
     fun onLocationSelected(location: String) {
+        if (stockViewModel.selectedLocation.value == location) return
         stockViewModel.onLocationSelected(location)
+        stockViewModel.onSearchQueryChange("")
+        selectedItems.clear()
+
+        val current = _selectedHeader.value
+        if (current != null) {
+            _selectedHeader.value = current.copy(location = location)
+        }
     }
 
     fun prepareSalesOrderHeader(
@@ -110,7 +118,7 @@ class SalesOrderViewModel(
                 debtor = "",
                 date = "",
                 soNo = nextSoNo,
-                location = location
+                location
             )
             onReady()
         }

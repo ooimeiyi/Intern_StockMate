@@ -61,6 +61,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -128,11 +129,33 @@ fun AdjustmentItemsScreen(
     val manuallySelectedCodes = remember { mutableStateListOf<String>() }
     val sessionTrackedCodes = remember { mutableStateListOf<String>() }
     var pickerSelectedCode by remember { mutableStateOf<String?>(null) }
+    var previousLocation by remember { mutableStateOf(selectedLocation) }
     val focusManager = LocalFocusManager.current
 
     LaunchedEffect(locations, selectedLocation, selectedHeader) {
         if (selectedHeader == null && locations.isNotEmpty() && selectedLocation.isBlank()) {
             stockAdjustmentViewModel.onLocationSelected(locations.first())
+        }
+    }
+
+    LaunchedEffect(selectedLocation) {
+        if (previousLocation.isNotBlank() && previousLocation != selectedLocation) {
+            val matchingCodes = allItems
+                .filter { stockItem ->
+                    stockItem.locationList.any { locationInfo -> locationInfo.location == selectedLocation }
+                }
+                .map { it.itemCode }
+                .toSet()
+            manuallySelectedCodes.removeAll { it !in matchingCodes }
+            sessionTrackedCodes.removeAll { it !in matchingCodes }
+            pickerSelectedCode = null
+        }
+        previousLocation = selectedLocation
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            stockViewModel.clearLocationSelection()
         }
     }
 
@@ -259,7 +282,7 @@ fun AdjustmentItemsScreen(
                                     label = "Location",
                                     selected = selectedLocation,
                                     options = locations,
-                                    onSelect = { stockViewModel.onLocationSelected(it) }
+                                    onSelect = { stockAdjustmentViewModel.onLocationSelected(it) }
                                 )
                             }
                         }
