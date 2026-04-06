@@ -113,7 +113,7 @@ fun StockDetailScreen(
                     text = if (item.itemGroup.isNullOrBlank()) "N/A" else item.itemGroup,
                     color = Color.White,
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                 )
             }
@@ -232,7 +232,7 @@ fun StockDetailScreen(
                     ) {
                         Text(
                             "UOM",
-                            modifier = Modifier.width(70.dp),
+                            modifier = Modifier.width(80.dp),
                             fontSize = 13.sp,
                             color = Color.Black,
                             fontWeight = FontWeight.Bold
@@ -299,8 +299,8 @@ fun StockDetailScreen(
                         ) {
                             Text(
                                 uomInfo.uom,
-                                modifier = Modifier.width(70.dp),
-                                fontSize = 14.sp,
+                                modifier = Modifier.width(80.dp),
+                                fontSize = 13.sp,
                                 color = Color.Black,
                                 fontWeight = FontWeight.Bold
                             )
@@ -339,14 +339,14 @@ fun StockDetailScreen(
                     Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
                         Text(
                             "LOCATION",
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1.2f),
                             fontSize = 12.sp,
                             color = Color.Black,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
                             "QTY",
-                            modifier = Modifier.width(60.dp),
+                            modifier = Modifier.weight(0.8f),
                             fontSize = 12.sp,
                             color = Color.Black,
                             fontWeight = FontWeight.Bold
@@ -421,7 +421,7 @@ fun LocationDetailRow(location: String, qty: String) {
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(text = location,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1.2f),
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
             color = Color.Black)
@@ -429,7 +429,7 @@ fun LocationDetailRow(location: String, qty: String) {
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
             color = Color.Red,
-            modifier = Modifier.weight(0.25f))
+            modifier = Modifier.weight(0.8f))
     }
     HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.5f))
 }

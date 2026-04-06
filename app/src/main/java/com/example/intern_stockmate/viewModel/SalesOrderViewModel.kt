@@ -118,7 +118,7 @@ class SalesOrderViewModel(
                 debtor = "",
                 date = "",
                 soNo = nextSoNo,
-                location
+                location = ""
             )
             onReady()
         }
