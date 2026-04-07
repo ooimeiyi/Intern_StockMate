@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.math.BigInteger
 import java.util.UUID
 import kotlin.collections.set
 import kotlin.math.max
@@ -60,7 +61,7 @@ class StockAdjustmentViewModel(
     }
 
     val physicalCounts = mutableStateMapOf<String, String>()
-    val diffCounts = mutableStateMapOf<String, Int>()
+    val diffCounts = mutableStateMapOf<String, String>()
     val selectedUoms = mutableStateMapOf<String, String>()
 
     private val _savedHeaders = MutableStateFlow<List<StockAdjustmentHeader>>(emptyList())
@@ -142,8 +143,8 @@ class StockAdjustmentViewModel(
                 ?.qty
                 ?: item?.locationList?.find { it.location == header.location }?.qty
                 ?: 0
-            val physicalInt = detail.qty.toIntOrNull() ?: 0
-            diffCounts[detail.itemCode] = physicalInt - onHand
+            val physicalInt = detail.qty.toBigIntegerOrNull() ?: BigInteger.ZERO
+            diffCounts[detail.itemCode] = (physicalInt - onHand.toBigInteger()).toString()
         }
     }
 
@@ -191,7 +192,7 @@ class StockAdjustmentViewModel(
                 .map { itemCode ->
                     StockAdjustmentDetail(
                         itemCode = itemCode,
-                        qty = (diffCounts[itemCode] ?: 0).toString(),
+                        qty = diffCounts[itemCode] ?: "0",
                         uom = selectedUoms[itemCode].orEmpty().ifBlank {
                             stockViewModel.allItems.value.find { it.itemCode == itemCode }?.uom.orEmpty()
                         }

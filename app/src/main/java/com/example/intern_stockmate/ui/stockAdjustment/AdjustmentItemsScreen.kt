@@ -90,6 +90,7 @@ import com.example.intern_stockmate.viewModel.StockAdjustmentViewModel
 import com.example.intern_stockmate.viewModel.StockViewModel
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
+import java.math.BigInteger
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -469,7 +470,7 @@ fun AdjustmentItemsScreen(
                                 if (!physicalCounts.containsKey(pickerItem.itemCode)) {
                                     physicalCounts[pickerItem.itemCode] = ""
 
-                                    diffCounts[pickerItem.itemCode] = 0
+                                    diffCounts[pickerItem.itemCode] = "0"
                                 }
                                 stockViewModel.onSearchQueryChange("")
                                 localQuery = ""
@@ -624,7 +625,7 @@ fun StockItemRowLogic(
     stockItem: StockItem,
     selectedLocation: String,
     physicalCounts: MutableMap<String, String>,
-    diffCounts: MutableMap<String, Int>,
+    diffCounts: MutableMap<String, String>,
     selectedUoms: MutableMap<String, String>,
     onTrackItemInSession: (String) -> Unit
 ) {
@@ -643,14 +644,14 @@ fun StockItemRowLogic(
         ?: stockItem.locationList.find { it.location == selectedLocation }?.qty
         ?: 0
 
-    val physicalInt = physicalCounts[key].orEmpty().toIntOrNull() ?: 0
-    val computedDiff = physicalInt - onHandQty
+    val physicalInt = physicalCounts[key].toBigIntOrZero()
+    val computedDiff = physicalInt - onHandQty.toBigInteger()
 
     StockItemFilterRow(
         item = stockItem,
         selectedLocation = selectedLocation,
         physicalValue = physicalCounts[key] ?: "",
-        diffValue = diffCounts[key] ?: computedDiff,
+        diffValue = diffCounts[key] ?: computedDiff.toString(),
         selectedUom = selectedUom,
         uomOptions = locationUomOptions,
         onUomChange = { newUom ->
@@ -661,7 +662,8 @@ fun StockItemRowLogic(
                 ?.qty
                 ?: stockItem.locationList.find { it.location == selectedLocation }?.qty
                 ?: 0
-            diffCounts[key] = (physicalCounts[key].orEmpty().toIntOrNull() ?: 0) - onHand
+            diffCounts[key] =
+                (physicalCounts[key].toBigIntOrZero() - onHand.toBigInteger()).toString()
         },
         onPhysicalChange = { newValue ->
             if (newValue.all { it.isDigit() } || newValue.isEmpty()) {
@@ -674,7 +676,11 @@ fun StockItemRowLogic(
                     ?.qty
                     ?: stockItem.locationList.find { it.location == selectedLocation }?.qty
                     ?: 0
-                diffCounts[key] = if (newValue.isBlank()) 0 else (newValue.toIntOrNull() ?: 0) - onHand
+                diffCounts[key] = if (newValue.isBlank()) {
+                    "0"
+                } else {
+                    (newValue.toBigIntOrZero() - onHand.toBigInteger()).toString()
+                }
             }
         }
     )
@@ -685,7 +691,7 @@ fun StockItemFilterRow(
     item: StockItem,
     selectedLocation: String,
     physicalValue: String,
-    diffValue: Int,
+    diffValue: String,
     selectedUom: String,
     uomOptions: List<String>,
     onUomChange: (String) -> Unit,
@@ -772,9 +778,9 @@ fun StockItemFilterRow(
                 )
                 QtyDisplayBox(
                     label = "Diff Qty",
-                    value = diffValue.toString(),
-                    modifier = Modifier.width(100.dp),
-                    color = if (diffValue < 0) Color.Red else Color(0xFF2E7D32)
+                    value = diffValue,
+                    minWidth = 90.dp,
+                    color = if (diffValue.toBigIntOrZero() < BigInteger.ZERO) Color.Red else Color(0xFF2E7D32)
                 )
             }
         }
@@ -834,6 +840,7 @@ fun AdjustmentDropdownUom(
         }
     }
 }
+
 
 @Composable
 fun EditableQtyBox(
@@ -898,6 +905,9 @@ private val PadButtonGray = Color(0xFFF5F5F5)
 private val PadButtonRed = Color(0xFFE53935)
 private val PadButtonGreen = Color(0xFF43A047)
 private val PadTextRed = Color(0xFFE53935)
+
+private fun String?.toBigIntOrZero(): BigInteger =
+    this?.takeIf { it.isNotBlank() }?.toBigIntegerOrNull() ?: BigInteger.ZERO
 
 @Composable
 private fun PhysicalQtyNumberPadDialog(
