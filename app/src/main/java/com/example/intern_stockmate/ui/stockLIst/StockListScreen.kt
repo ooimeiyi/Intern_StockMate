@@ -20,12 +20,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
@@ -75,6 +77,7 @@ fun StockListScreenContainer(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val isInvalidSearch by viewModel.isInvalidSearch.collectAsState()
     val filteredItems by viewModel.filteredItems.collectAsState()
+    val stockLastUpdate by viewModel.stockLastUpdate.collectAsState()
 
     val focusManager = LocalFocusManager.current
 
@@ -100,6 +103,7 @@ fun StockListScreenContainer(
             filteredItems = itemsList,
             searchQuery = searchQuery,
             isInvalidSearch = isInvalidSearch,
+            stockLastUpdate = stockLastUpdate,
             onSearchQueryChange = { viewModel.onSearchQueryChange(it) }
         )
 
@@ -146,6 +150,7 @@ fun StockListScreen(
     filteredItems: List<StockItem>,
     searchQuery: String,
     isInvalidSearch: Boolean,
+    stockLastUpdate: String,
     onSearchQueryChange: (String) -> Unit
 ) {
     val context = LocalContext.current
@@ -172,53 +177,93 @@ fun StockListScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Row(
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+            border = BorderStroke(0.5.dp, Color(0xFFE0E0E0))
         ) {
-            OutlinedTextField(
-                value = localQuery,
-                onValueChange = { localQuery = it },
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(
-                    onSearch = {
-                        val query = localQuery.trim()
-                        onSearchQueryChange(query)
-                        CoroutineScope(Dispatchers.Main).launch {
-                            kotlinx.coroutines.delay(50)
-                            localQuery = ""
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = localQuery,
+                        onValueChange = { localQuery = it },
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(
+                            onSearch = {
+                                val query = localQuery.trim()
+                                onSearchQueryChange(query)
+                                CoroutineScope(Dispatchers.Main).launch {
+                                    kotlinx.coroutines.delay(50)
+                                    localQuery = ""
+                                }
+                            }
+                        ),
+                        placeholder = { Text("Item Code or Desc.", color = Color.LightGray) },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                        colors = textFieldColors,
+                        shape = RoundedCornerShape(8.dp),
+                        leadingIcon = { Icon(Icons.Default.Search, null, tint = Color.LightGray) },
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = {
+                                    localQuery = ""
+                                    onSearchQueryChange("") }) {
+                                    Icon(Icons.Default.Clear, "Clear", tint = Color.Black)
+                                }
+                            }
                         }
-                    }
-                ),
-                placeholder = { Text("Item Code or Desc.", color = Color.LightGray) },
-                singleLine = true,
-                modifier = Modifier.weight(1f),
-                colors = textFieldColors,
-                shape = RoundedCornerShape(8.dp),
-                leadingIcon = { Icon(Icons.Default.Search, null, tint = Color.LightGray) },
-                trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = {
-                            localQuery = ""
-                            onSearchQueryChange("") }) {
-                            Icon(Icons.Default.Clear, "Clear", tint = Color.Black)
-                        }
+                    )
+                    Button(
+                        onClick = { cameraPermissionLauncher.launch(Manifest.permission.CAMERA) },
+                        modifier = Modifier.size(56.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF3636)),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Icon(Icons.Default.QrCodeScanner, contentDescription = "Scan", tint = Color.White, modifier = Modifier.size(28.dp))
                     }
                 }
-            )
-            Button(
-                onClick = { cameraPermissionLauncher.launch(Manifest.permission.CAMERA) },
-                modifier = Modifier.size(56.dp),
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF3636)),
-                contentPadding = PaddingValues(0.dp)
-            ) {
-                Icon(Icons.Default.QrCodeScanner, contentDescription = "Scan", tint = Color.White, modifier = Modifier.size(28.dp))
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                if (stockLastUpdate.isNotBlank()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                color = Color(0xFFE8F0FE),
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AccessTime,
+                            contentDescription = null,
+                            tint = Color(0xFF1A73E8),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Last Synced: $stockLastUpdate",
+                            color = Color(0xFF1A73E8),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         if (isInvalidSearch) {
             Box(

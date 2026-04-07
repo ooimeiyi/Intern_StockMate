@@ -3,13 +3,15 @@ package com.example.intern_stockmate.viewModel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.example.intern_stockmate.data.CompanyContext
 import com.example.intern_stockmate.model.LocationInfo
 import com.example.intern_stockmate.model.StockItem
 import com.example.intern_stockmate.model.UomInfo
 import com.example.intern_stockmate.model.UomLocationInfo
-import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -19,8 +21,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class StockViewModel(
-    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance(),
+    private val storage: FirebaseStorage = FirebaseStorage.getInstance()
 ) : ViewModel() {
+    private val gson = Gson()
 
     private val _allItems = MutableStateFlow<List<StockItem>>(emptyList())
     val allItems: StateFlow<List<StockItem>> = _allItems.asStateFlow()
@@ -38,6 +42,8 @@ class StockViewModel(
 
     private val _stockState = MutableStateFlow<StockUiState>(StockUiState.Loading)
     val stockState: StateFlow<StockUiState> = _stockState.asStateFlow()
+    private val _stockLastUpdate = MutableStateFlow("")
+    val stockLastUpdate: StateFlow<String> = _stockLastUpdate.asStateFlow()
 
     val filteredItems: StateFlow<List<StockItem>> = combine(
         _allItems,
@@ -91,53 +97,102 @@ class StockViewModel(
         _stockState.value = StockUiState.Loading
 
         CompanyContext.collection(firestore, COLLECTION_NAME)
+            .document(METADATA_DOCUMENT_ID)
             .get()
-            .addOnSuccessListener { querySnapshot ->
-                if (querySnapshot.isEmpty) {
+            .addOnSuccessListener { metadataDocument ->
+                if (!metadataDocument.exists()) {
                     clearStockData()
-                    _stockState.value = StockUiState.Error("No stock items found in Firebase.")
+                    _stockState.value = StockUiState.Error("Stock metadata was not found.")
                     return@addOnSuccessListener
                 }
 
-                val parsed = querySnapshot.documents.map { it.toStockItem() }
-                    .filter { it.itemCode.isNotBlank() }
-
-                if (parsed.isEmpty()) {
+                val storagePath = metadataDocument.getString("storagePath").orEmpty().trim()
+                if (storagePath.isBlank()) {
                     clearStockData()
-                    _stockState.value = StockUiState.Error("Stock documents were found, but item data is empty.")
+                    _stockState.value = StockUiState.Error("Stock metadata is missing storagePath.")
                     return@addOnSuccessListener
                 }
 
-                _allItems.value = parsed
-                _locations.value = parsed
-                    .flatMap { item -> item.locationList.map { it.location } }
-                    .filter { it.isNotBlank() }
-                    .distinct()
-                    .sorted()
-                if (_selectedLocation.value.isNotBlank() && _selectedLocation.value !in _locations.value) {
-                    _selectedLocation.value = ""
-                }
-                _stockState.value = StockUiState.Success(parsed)
+                storage.reference.child(storagePath)
+                    .getBytes(MAX_STOCK_JSON_SIZE_BYTES)
+                    .addOnSuccessListener { bytes ->
+                        val json = bytes.toString(Charsets.UTF_8)
+                        val parsedPayload = parseStockPayload(json)
+                        val parsed = parsedPayload.items
+
+                        if (parsed.isEmpty()) {
+                            clearStockData()
+                            _stockState.value = StockUiState.Error("Stock list JSON is empty or invalid.")
+                            return@addOnSuccessListener
+                        }
+
+                        _stockLastUpdate.value = parsedPayload.lastUpdate
+                        _allItems.value = parsed
+                        _locations.value = parsed
+                            .flatMap { item -> item.locationList.map { it.location } }
+                            .filter { it.isNotBlank() }
+                            .distinct()
+                            .sorted()
+                        if (_selectedLocation.value.isNotBlank() && _selectedLocation.value !in _locations.value) {
+                            _selectedLocation.value = ""
+                        }
+                        _stockState.value = StockUiState.Success(parsed)
+                    }
+                    .addOnFailureListener { error ->
+                        Log.e(TAG, "Failed to download stock JSON from Storage path: $storagePath", error)
+                        clearStockData()
+                        _stockState.value = StockUiState.Error(
+                            error.message ?: "Failed to download stock list JSON from Firebase Storage."
+                        )
+                    }
             }
             .addOnFailureListener { error ->
-                Log.e(TAG, "Failed to load stock list", error)
+                Log.e(TAG, "Failed to load stock metadata", error)
                 clearStockData()
                 _stockState.value = StockUiState.Error(
-                    error.message ?: "Failed to load stock list from Firebase."
+                    error.message ?: "Failed to load stock metadata from Firestore."
                 )
             }
     }
+
+    private fun parseStockPayload(json: String): ParsedStockPayload =
+        runCatching {
+            val payloadType = object : TypeToken<StockJsonPayload>() {}.type
+            val payload = gson.fromJson<StockJsonPayload>(json, payloadType)
+
+            if (!payload?.data.isNullOrEmpty()) {
+                ParsedStockPayload(
+                    lastUpdate = payload?.lastUpdate.orEmpty(),
+                    items = payload?.data.orEmpty()
+                        .map { map -> map.toStockItem() }
+                        .filter { it.itemCode.isNotBlank() }
+                )
+            } else {
+                val listType = object : TypeToken<List<Map<String, Any?>>>() {}.type
+                val legacyList = gson.fromJson<List<Map<String, Any?>>>(json, listType).orEmpty()
+                ParsedStockPayload(
+                    lastUpdate = "",
+                    items = legacyList
+                        .map { map -> map.toStockItem() }
+                        .filter { it.itemCode.isNotBlank() }
+                )
+            }
+        }.onFailure { error ->
+            Log.e(TAG, "Failed to parse stock JSON", error)
+        }.getOrDefault(ParsedStockPayload())
 
     private fun clearStockData() {
         _allItems.value = emptyList()
         _locations.value = emptyList()
         _selectedLocation.value = ""
+        _stockLastUpdate.value = ""
     }
 
-    private fun DocumentSnapshot.toStockItem(): StockItem {
-        val payload = data.orEmpty()
+    private fun Map<*, *>.toStockItem(fallbackId: String = ""): StockItem {
+        val payload = this
 
         val uomMaps = payload["uoms"] as? List<*>
+
         val uomList = uomMaps.orEmpty().mapNotNull { entry ->
             val map = entry as? Map<*, *> ?: return@mapNotNull null
             UomInfo(
@@ -177,7 +232,7 @@ class StockViewModel(
         }.distinctBy { "${it.uom.uppercase()}|${it.location.uppercase()}" }
 
         return StockItem(
-            itemCode = payload.string("itemCode").ifBlank { id },
+            itemCode = payload.string("itemCode").ifBlank { fallbackId },
             description = payload.string("description"),
             desc2 = payload.nullableString("desc2"),
             isActive = payload.nullableString("isActive"),
@@ -236,8 +291,21 @@ class StockViewModel(
     private companion object {
         const val TAG = "StockViewModel"
         const val COLLECTION_NAME = "StockList"
+        const val METADATA_DOCUMENT_ID = "Metadata"
+        const val MAX_STOCK_JSON_SIZE_BYTES = 25L * 1024L * 1024L
     }
 }
+
+private data class StockJsonPayload(
+    val totalItems: Int? = null,
+    val lastUpdate: String? = null,
+    val data: List<Map<String, Any?>>? = null
+)
+
+private data class ParsedStockPayload(
+    val lastUpdate: String = "",
+    val items: List<StockItem> = emptyList()
+)
 
 sealed interface StockUiState {
     data object Loading : StockUiState
