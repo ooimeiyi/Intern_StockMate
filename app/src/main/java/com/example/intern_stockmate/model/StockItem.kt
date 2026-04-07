@@ -24,6 +24,7 @@ data class StockItem(
     val location: String = "",
     val itemPhoto: String? = null,
     val uomList: List<UomInfo> = emptyList(),
+    val uomLocationList: List<UomLocationInfo> = emptyList(),
     val locationList: List<LocationInfo> = emptyList()
 ) : Parcelable
 
@@ -38,6 +39,14 @@ data class UomInfo(
     val price5: Double,
     val price6: Double,
     val barCode: String? = null
+) : Parcelable
+
+@Parcelize
+data class UomLocationInfo(
+    val uom: String,
+    val location: String,
+    val qty: Int,
+    val rate: Double
 ) : Parcelable
 
 @Parcelize

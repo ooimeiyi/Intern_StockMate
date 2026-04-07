@@ -7,6 +7,7 @@ import com.example.intern_stockmate.data.CompanyContext
 import com.example.intern_stockmate.model.LocationInfo
 import com.example.intern_stockmate.model.StockItem
 import com.example.intern_stockmate.model.UomInfo
+import com.example.intern_stockmate.model.UomLocationInfo
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -162,6 +163,19 @@ class StockViewModel(
             )
         }.distinctBy { it.location }
 
+        val uomLocationList = uomMaps.orEmpty().mapNotNull { entry ->
+            val map = entry as? Map<*, *> ?: return@mapNotNull null
+            val uom = map.string("uom", "UNIT")
+            val location = map.string("location")
+            if (location.isBlank()) return@mapNotNull null
+            UomLocationInfo(
+                uom = uom,
+                location = location,
+                qty = map.int("balQty"),
+                rate = map.double("rate", 1.0)
+            )
+        }.distinctBy { "${it.uom.uppercase()}|${it.location.uppercase()}" }
+
         return StockItem(
             itemCode = payload.string("itemCode").ifBlank { id },
             description = payload.string("description"),
@@ -182,6 +196,7 @@ class StockViewModel(
             location = locationList.firstOrNull()?.location.orEmpty(),
             itemPhoto = payload.nullableString("itemPhoto"),
             uomList = uomList,
+            uomLocationList = uomLocationList,
             locationList = locationList
         )
     }

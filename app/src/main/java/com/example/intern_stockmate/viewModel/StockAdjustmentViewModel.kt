@@ -51,6 +51,7 @@ class StockAdjustmentViewModel(
         stockViewModel.onSearchQueryChange("")
         physicalCounts.clear()
         diffCounts.clear()
+        selectedUoms.clear()
 
         val current = _selectedHeader.value
         if (current != null) {
@@ -60,6 +61,7 @@ class StockAdjustmentViewModel(
 
     val physicalCounts = mutableStateMapOf<String, String>()
     val diffCounts = mutableStateMapOf<String, Int>()
+    val selectedUoms = mutableStateMapOf<String, String>()
 
     private val _savedHeaders = MutableStateFlow<List<StockAdjustmentHeader>>(emptyList())
     val savedHeaders: StateFlow<List<StockAdjustmentHeader>> = _savedHeaders.asStateFlow()
@@ -96,6 +98,7 @@ class StockAdjustmentViewModel(
     ) {
         physicalCounts.clear()
         diffCounts.clear()
+        selectedUoms.clear()
 
         _selectedHeader.value = StockAdjustmentHeader(
             description = description,
@@ -126,12 +129,19 @@ class StockAdjustmentViewModel(
 
         physicalCounts.clear()
         diffCounts.clear()
+        selectedUoms.clear()
 
         header.items.forEach { detail ->
             physicalCounts[detail.itemCode] = detail.qty
+            selectedUoms[detail.itemCode] = detail.uom
 
             val item = stockViewModel.allItems.value.find { it.itemCode == detail.itemCode }
-            val onHand = item?.locationList?.find { it.location == header.location }?.qty ?: 0
+            val selectedUom = detail.uom.ifBlank { item?.uom.orEmpty() }
+            val onHand = item?.uomLocationList
+                ?.find { it.location == header.location && it.uom.equals(selectedUom, ignoreCase = true) }
+                ?.qty
+                ?: item?.locationList?.find { it.location == header.location }?.qty
+                ?: 0
             val physicalInt = detail.qty.toIntOrNull() ?: 0
             diffCounts[detail.itemCode] = physicalInt - onHand
         }
@@ -182,7 +192,9 @@ class StockAdjustmentViewModel(
                     StockAdjustmentDetail(
                         itemCode = itemCode,
                         qty = (diffCounts[itemCode] ?: 0).toString(),
-                        uom = stockViewModel.allItems.value.find { it.itemCode == itemCode }?.uom.orEmpty()
+                        uom = selectedUoms[itemCode].orEmpty().ifBlank {
+                            stockViewModel.allItems.value.find { it.itemCode == itemCode }?.uom.orEmpty()
+                        }
                     )
                 }
         )
@@ -247,7 +259,9 @@ class StockAdjustmentViewModel(
                 StockAdjustmentDetail(
                     itemCode = itemCode,
                     qty = physicalCounts[itemCode] ?: "",
-                    uom = stockViewModel.allItems.value.find { it.itemCode == itemCode }?.uom.orEmpty()
+                    uom = selectedUoms[itemCode].orEmpty().ifBlank {
+                        stockViewModel.allItems.value.find { it.itemCode == itemCode }?.uom.orEmpty()
+                    }
                 )
             }
         )

@@ -103,6 +103,7 @@ fun AdjustmentItemsScreen(
 ) {
     val physicalCounts = stockAdjustmentViewModel.physicalCounts
     val diffCounts = stockAdjustmentViewModel.diffCounts
+    val selectedUoms = stockAdjustmentViewModel.selectedUoms
     val selectedHeader by stockAdjustmentViewModel.selectedHeader.collectAsState()
 
     val searchQuery by stockViewModel.searchQuery.collectAsState()
@@ -401,6 +402,7 @@ fun AdjustmentItemsScreen(
                     selectedLocation = selectedLocation,
                     physicalCounts = physicalCounts,
                     diffCounts = diffCounts,
+                    selectedUoms = selectedUoms,
                     onTrackItemInSession = { itemCode ->
                         if (!sessionTrackedCodes.contains(itemCode)) {
                             sessionTrackedCodes.add(itemCode)
@@ -623,19 +625,55 @@ fun StockItemRowLogic(
     selectedLocation: String,
     physicalCounts: MutableMap<String, String>,
     diffCounts: MutableMap<String, Int>,
+    selectedUoms: MutableMap<String, String>,
     onTrackItemInSession: (String) -> Unit
 ) {
     val key = stockItem.itemCode
+    val locationUomOptions = stockItem.uomLocationList
+        .filter { it.location == selectedLocation }
+        .map { it.uom }
+        .distinct()
+        .ifEmpty { stockItem.uomList.map { it.uom }.distinct() }
+        .ifEmpty { listOf(stockItem.uom) }
+    val selectedUom = selectedUoms[key].orEmpty().ifBlank { locationUomOptions.first() }
+
+    val onHandQty = stockItem.uomLocationList
+        .find { it.location == selectedLocation && it.uom.equals(selectedUom, ignoreCase = true) }
+        ?.qty
+        ?: stockItem.locationList.find { it.location == selectedLocation }?.qty
+        ?: 0
+
+    val physicalInt = physicalCounts[key].orEmpty().toIntOrNull() ?: 0
+    val computedDiff = physicalInt - onHandQty
+
     StockItemFilterRow(
         item = stockItem,
         selectedLocation = selectedLocation,
         physicalValue = physicalCounts[key] ?: "",
-        diffValue = diffCounts[key] ?: 0,
+        diffValue = diffCounts[key] ?: computedDiff,
+        selectedUom = selectedUom,
+        uomOptions = locationUomOptions,
+        onUomChange = { newUom ->
+            onTrackItemInSession(key)
+            selectedUoms[key] = newUom
+            val onHand = stockItem.uomLocationList
+                .find { it.location == selectedLocation && it.uom.equals(newUom, ignoreCase = true) }
+                ?.qty
+                ?: stockItem.locationList.find { it.location == selectedLocation }?.qty
+                ?: 0
+            diffCounts[key] = (physicalCounts[key].orEmpty().toIntOrNull() ?: 0) - onHand
+        },
         onPhysicalChange = { newValue ->
             if (newValue.all { it.isDigit() } || newValue.isEmpty()) {
                 onTrackItemInSession(key)
                 physicalCounts[key] = newValue
-                val onHand = stockItem.locationList.find { it.location == selectedLocation }?.qty ?: 0
+                val activeUom = selectedUoms[key].orEmpty().ifBlank { selectedUom }
+                selectedUoms[key] = activeUom
+                val onHand = stockItem.uomLocationList
+                    .find { it.location == selectedLocation && it.uom.equals(activeUom, ignoreCase = true) }
+                    ?.qty
+                    ?: stockItem.locationList.find { it.location == selectedLocation }?.qty
+                    ?: 0
                 diffCounts[key] = if (newValue.isBlank()) 0 else (newValue.toIntOrNull() ?: 0) - onHand
             }
         }
@@ -648,9 +686,16 @@ fun StockItemFilterRow(
     selectedLocation: String,
     physicalValue: String,
     diffValue: Int,
+    selectedUom: String,
+    uomOptions: List<String>,
+    onUomChange: (String) -> Unit,
     onPhysicalChange: (String) -> Unit
 ) {
-    val onHandQty = item.locationList.find { it.location == selectedLocation }?.qty ?: 0
+    val onHandQty = item.uomLocationList
+        .find { it.location == selectedLocation && it.uom.equals(selectedUom, ignoreCase = true) }
+        ?.qty
+        ?: item.locationList.find { it.location == selectedLocation }?.qty
+        ?: 0
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -701,6 +746,12 @@ fun StockItemFilterRow(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                AdjustmentDropdownUom(
+                    label = "UOM",
+                    selected = selectedUom,
+                    options = uomOptions,
+                    onSelect = onUomChange
+                )
                 QtyDisplayBox(
                     label = "OnHand Qty",
                     value = onHandQty.toString(),
@@ -725,6 +776,60 @@ fun StockItemFilterRow(
                     modifier = Modifier.width(100.dp),
                     color = if (diffValue < 0) Color.Red else Color(0xFF2E7D32)
                 )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AdjustmentDropdownUom(
+    label: String,
+    selected: String,
+    options: List<String>,
+    onSelect: (String) -> Unit,
+    width: Dp = 100.dp,
+    height: Dp = 45.dp
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    val textFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = Color.Black,
+        unfocusedTextColor = Color.Black,
+        cursorColor = Color.Black,
+        focusedBorderColor = Color(0xFFE53935),
+        unfocusedBorderColor = Color(0xFFE0E0E0),
+        focusedContainerColor = Color.White,
+        unfocusedContainerColor = Color.White
+    )
+
+    Column {
+        Text(label, fontSize = 10.sp, color = Color.Gray, modifier = Modifier.padding(bottom = 2.dp))
+        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
+            OutlinedTextField(
+                value = selected,
+                onValueChange = {},
+                readOnly = true,
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier.menuAnchor().width(width).height(height),
+                shape = RoundedCornerShape(4.dp),
+                textStyle = TextStyle(fontSize = 11.sp),
+                colors = textFieldColors
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.width(width).background(Color.White)
+            ) {
+                options.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(text = option, fontSize = 13.sp, color = Color.Black) },
+                        onClick = {
+                            onSelect(option)
+                            expanded = false
+                        }
+                    )
+                }
             }
         }
     }
