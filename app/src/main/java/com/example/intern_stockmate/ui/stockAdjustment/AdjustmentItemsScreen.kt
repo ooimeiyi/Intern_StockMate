@@ -116,9 +116,10 @@ fun AdjustmentItemsScreen(
     val filteredItems by stockViewModel.filteredItems.collectAsState()
     val allItems by stockViewModel.allItems.collectAsState()
 
-    var description by remember(selectedHeader) { mutableStateOf(selectedHeader?.description ?: "") }
-    var stockTakeNo by remember(selectedHeader) { mutableStateOf(selectedHeader?.stockTakeNo ?: "") }
-    var date by remember(selectedHeader) { mutableStateOf(selectedHeader?.date ?: "") }
+    val selectedHeaderKey = selectedHeader?.stockTakeNo
+    var description by remember(selectedHeaderKey) { mutableStateOf(selectedHeader?.description ?: "") }
+    var stockTakeNo by remember(selectedHeaderKey) { mutableStateOf(selectedHeader?.stockTakeNo ?: "") }
+    var date by remember(selectedHeaderKey) { mutableStateOf(selectedHeader?.date ?: "") }
 
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = androidx.compose.material3.rememberDatePickerState()
@@ -749,7 +750,7 @@ fun StockItemFilterRow(
                     .fillMaxWidth()
                     .horizontalScroll(scrollState)
                     .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 AdjustmentDropdownUom(
@@ -773,13 +774,13 @@ fun StockItemFilterRow(
                         }
                     },
                     isNumber = true,
-                    minWidth = 90.dp,
+                    minWidth = 70.dp,
                     color = Color.Black
                 )
                 QtyDisplayBox(
                     label = "Diff Qty",
                     value = diffValue,
-                    minWidth = 90.dp,
+                    minWidth = 70.dp,
                     color = if (diffValue.toBigIntOrZero() < BigInteger.ZERO) Color.Red else Color(0xFF2E7D32)
                 )
             }

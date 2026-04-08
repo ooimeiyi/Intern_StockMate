@@ -112,9 +112,10 @@ fun SalesOrderDetailsScreen(
     val filteredItems by stockViewModel.filteredItems.collectAsState()
     val allItems by stockViewModel.allItems.collectAsState()
 
-    var debtor by remember(selectedHeader) { mutableStateOf(selectedHeader?.debtor ?: "") }
-    var soNo by remember(selectedHeader) { mutableStateOf(selectedHeader?.soNo ?: "") }
-    var date by remember(selectedHeader) { mutableStateOf(selectedHeader?.date ?: "") }
+    val selectedHeaderKey = selectedHeader?.soNo
+    var debtor by remember(selectedHeaderKey) { mutableStateOf(selectedHeader?.debtor ?: "") }
+    var soNo by remember(selectedHeaderKey) { mutableStateOf(selectedHeader?.soNo ?: "") }
+    var date by remember(selectedHeaderKey) { mutableStateOf(selectedHeader?.date ?: "") }
 
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = androidx.compose.material3.rememberDatePickerState()
