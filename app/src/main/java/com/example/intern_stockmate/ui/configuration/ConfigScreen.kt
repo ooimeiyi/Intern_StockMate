@@ -21,8 +21,10 @@ import androidx.compose.material.icons.filled.Lock
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.filled.Visibility
@@ -42,6 +44,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -56,6 +59,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.intern_stockmate.data.DocumentNumberFormatStore
 import com.example.intern_stockmate.viewModel.LoginViewModel
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -74,8 +78,12 @@ fun ConfigScreen(
     val configurationViewModel: ConfigurationViewModel = viewModel()
     val companyListState by configurationViewModel.companyListState.collectAsState()
     val selectedCompanyId by configurationViewModel.selectedCompanyId.collectAsState()
+    val savedSalesOrderFormat by configurationViewModel.salesOrderFormat.collectAsState()
+    val savedStockAdjustmentFormat by configurationViewModel.stockAdjustmentFormat.collectAsState()
 
     var companyExpanded by remember { mutableStateOf(false) }
+    var salesOrderFormat by remember(savedSalesOrderFormat) { mutableStateOf(savedSalesOrderFormat) }
+    var adjustmentFormat by remember(savedStockAdjustmentFormat) { mutableStateOf(savedStockAdjustmentFormat) }
 
     var oldPassword by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
@@ -85,6 +93,7 @@ fun ConfigScreen(
     var resetCodeVisible by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
+
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
         focusedTextColor = Color.Black,
@@ -173,6 +182,130 @@ fun ConfigScreen(
                     )
                 }
                 else -> Unit
+            }
+        }
+
+        ManagementCard(title = "Document Number Format", icon = Icons.Default.Settings) {
+            Text(
+                text = "Set the format for generated document numbers (e.g., Sales Orders). Use placeholders like {SM} , {SO}, and {00000} for auto-incrementing numbers.",
+                color = Color.Gray,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(vertical = 4.dp)
+            )
+
+            Text(
+                text = "Sales Order Number Format",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            OutlinedTextField(
+                value = salesOrderFormat,
+                onValueChange = { salesOrderFormat = it },
+                modifier = Modifier.fillMaxWidth(),
+                colors = textFieldColors,
+                shape = RoundedCornerShape(8.dp),
+                singleLine = true
+            )
+
+            Box(
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .fillMaxWidth()
+                    .background(Color(0xFFF9FAFB), RoundedCornerShape(4.dp))
+                    .padding(8.dp)
+            ) {
+                Text(
+                    text = "Preview: ${DocumentNumberFormatStore.formatPreview(salesOrderFormat)}",
+                    fontSize = 12.sp,
+                    color = Color(0xFF2563EB)
+                )
+            }
+
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 20.dp),
+                thickness = 1.dp,
+                color = Color(0xFFF0F0F0)
+            )
+
+            Text(
+                text = "Stock Adjustment Number Format",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            OutlinedTextField(
+                value = adjustmentFormat,
+                onValueChange = { adjustmentFormat = it },
+                modifier = Modifier.fillMaxWidth(),
+                colors = textFieldColors,
+                shape = RoundedCornerShape(8.dp),
+                singleLine = true
+            )
+
+            Box(
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .fillMaxWidth()
+                    .background(Color(0xFFF9FAFB), RoundedCornerShape(4.dp))
+                    .padding(8.dp)
+            ) {
+                Text(
+                    text = "Preview: ${DocumentNumberFormatStore.formatPreview(adjustmentFormat)}",
+                    fontSize = 12.sp,
+                    color = Color(0xFF2563EB)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = {
+                    val result = configurationViewModel.saveDocumentFormats(
+                        salesOrderFormat = salesOrderFormat,
+                        stockAdjustmentFormat = adjustmentFormat
+                    )
+
+                    if (result.isSuccess) {
+                        Toast.makeText(context, "Document Format Saved", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(
+                            context,
+                            result.exceptionOrNull()?.message ?: "Unable to save formats",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF3636))
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.Save,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = Color.White
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Text(
+                        text = "Save Format",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+
             }
         }
 

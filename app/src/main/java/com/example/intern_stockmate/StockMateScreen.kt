@@ -29,6 +29,7 @@ import com.example.intern_stockmate.ui.dashboard.MainScreenWithMenu
 import com.example.intern_stockmate.ui.configuration.ConfigScreen
 import com.example.intern_stockmate.ui.loginScreen.LogInScreen
 import com.example.intern_stockmate.data.CompanyContext
+import com.example.intern_stockmate.data.DocumentNumberFormatStore
 import com.example.intern_stockmate.data.local.UserCredentialDatabase
 import com.example.intern_stockmate.viewModel.LoginViewModel
 import com.example.intern_stockmate.viewModel.LoginViewModelFactory
@@ -48,6 +49,7 @@ fun StockMateScreen() {
 
     LaunchedEffect(Unit) {
         CompanyContext.initialize(context)
+        DocumentNumberFormatStore.initialize(context)
     }
 
     Surface(

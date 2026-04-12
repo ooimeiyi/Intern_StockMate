@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.intern_stockmate.data.CompanyContext
+import com.example.intern_stockmate.data.DocumentNumberFormatStore
 import com.example.intern_stockmate.data.local.StockAdjustmentDatabase
 import com.example.intern_stockmate.data.local.toEntity
 import com.example.intern_stockmate.data.local.toModel
@@ -31,9 +32,9 @@ class StockAdjustmentViewModel(
     application: Application,
     private val stockViewModel: StockViewModel
 ) : AndroidViewModel(application) {
-    private val stockTakePrefix = "SM-ADJ"
-    private val stockTakeRegex = Regex("^${stockTakePrefix}(\\d+)$")
-    private val stockTakeDigits = 6
+
+    @Volatile
+    private var stockAdjustmentFormat = DocumentNumberFormatStore.DEFAULT_STOCK_ADJUSTMENT_FORMAT
 
     private var stockAdjustmentDao =
         StockAdjustmentDatabase.getInstance(application, CompanyContext.selectedCompanyId.value).stockAdjustmentDao()
@@ -88,6 +89,11 @@ class StockAdjustmentViewModel(
                         loadSavedAdjustmentsFromLocal()
                     }
                 }
+        }
+        viewModelScope.launch {
+            DocumentNumberFormatStore.stockAdjustmentFormat.collect { format ->
+                stockAdjustmentFormat = format
+            }
         }
     }
 
@@ -242,12 +248,11 @@ class StockAdjustmentViewModel(
     }
 
     private fun extractStockTakeSequence(stockTakeNo: String): Int? {
-        val match = stockTakeRegex.matchEntire(stockTakeNo) ?: return null
-        return match.groupValues.getOrNull(1)?.toIntOrNull()
+        return DocumentNumberFormatStore.extractSequence(stockAdjustmentFormat, stockTakeNo)
     }
 
     private fun formatStockTakeNo(sequence: Int): String {
-        return "$stockTakePrefix${sequence.toString().padStart(stockTakeDigits, '0')}"
+        return DocumentNumberFormatStore.applySequence(stockAdjustmentFormat, sequence)
     }
 
     private fun buildHeaderWithCurrentItems(

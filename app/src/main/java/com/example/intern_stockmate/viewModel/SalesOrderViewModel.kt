@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.intern_stockmate.data.CompanyContext
+import com.example.intern_stockmate.data.DocumentNumberFormatStore
 import com.example.intern_stockmate.data.local.SalesOrderDatabase
 import com.example.intern_stockmate.data.local.toEntity
 import com.example.intern_stockmate.data.local.toModel
@@ -39,10 +40,10 @@ class SalesOrderViewModel(
         val unitPrice: Double
     )
 
-    private val soPrefix = "SM-SO"
     private var salesOrderDao = daoForCurrentCompany()
-    private val soRegex = Regex("^SM-SO(\\d+)$")
-    private val soDigits = 5
+
+    @Volatile
+    private var salesOrderFormat = DocumentNumberFormatStore.DEFAULT_SALES_ORDER_FORMAT
 
     private val _savedHeaders = MutableStateFlow<List<SalesOrderHeader>>(emptyList())
     val savedHeaders: StateFlow<List<SalesOrderHeader>> = _savedHeaders.asStateFlow()
@@ -77,6 +78,11 @@ class SalesOrderViewModel(
                         loadDebtors()
                     }
                 }
+        }
+        viewModelScope.launch {
+            DocumentNumberFormatStore.salesOrderFormat.collect { format ->
+                salesOrderFormat = format
+            }
         }
     }
 
@@ -401,12 +407,11 @@ class SalesOrderViewModel(
     }
 
     private fun extractSequence(soNo: String): Int? {
-        val match = soRegex.matchEntire(soNo) ?: return null
-        return match.groupValues.getOrNull(1)?.toIntOrNull()
+        return DocumentNumberFormatStore.extractSequence(salesOrderFormat, soNo)
     }
 
     private fun formatSoNo(sequence: Int): String {
-        return "$soPrefix${sequence.toString().padStart(soDigits, '0')}"
+        return DocumentNumberFormatStore.applySequence(salesOrderFormat, sequence)
     }
 
     private fun buildDetailsFromSelectedItems(): List<SalesOrderDetail> {

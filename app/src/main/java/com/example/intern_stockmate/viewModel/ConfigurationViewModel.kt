@@ -3,6 +3,7 @@ package com.example.intern_stockmate.viewModel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import com.example.intern_stockmate.data.CompanyContext
+import com.example.intern_stockmate.data.DocumentNumberFormatStore
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
@@ -29,6 +30,9 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
     val companyListState: StateFlow<CompanyListUiState> = _companyListState.asStateFlow()
 
     val selectedCompanyId: StateFlow<String> = CompanyContext.selectedCompanyId
+
+    val salesOrderFormat: StateFlow<String> = DocumentNumberFormatStore.salesOrderFormat
+    val stockAdjustmentFormat: StateFlow<String> = DocumentNumberFormatStore.stockAdjustmentFormat
 
     private var companiesListener: ListenerRegistration? = null
 
@@ -131,6 +135,26 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
 
     fun selectCompany(companyId: String) {
         CompanyContext.updateSelectedCompany(getApplication(), companyId)
+    }
+
+    fun saveDocumentFormats(salesOrderFormat: String, stockAdjustmentFormat: String): Result<Unit> {
+        val normalizedSo = salesOrderFormat.trim()
+        val normalizedSt = stockAdjustmentFormat.trim()
+
+        if (!DocumentNumberFormatStore.isValidFormat(normalizedSo)) {
+            return Result.failure(IllegalArgumentException("Sales Order format must contain at least one 0"))
+        }
+
+        if (!DocumentNumberFormatStore.isValidFormat(normalizedSt)) {
+            return Result.failure(IllegalArgumentException("Stock Adjustment format must contain at least one 0"))
+        }
+
+        DocumentNumberFormatStore.updateFormats(
+            context = getApplication(),
+            salesOrderFormat = normalizedSo,
+            stockAdjustmentFormat = normalizedSt
+        )
+        return Result.success(Unit)
     }
 
     override fun onCleared() {
