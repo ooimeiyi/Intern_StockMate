@@ -88,6 +88,9 @@ import com.example.intern_stockmate.viewModel.StockViewModel
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.runtime.DisposableEffect
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -102,14 +105,12 @@ fun SalesOrderDetailsScreen(
 ) {
     val selectedHeader by salesOrderViewModel.selectedHeader.collectAsState()
 
-    val searchQuery by stockViewModel.searchQuery.collectAsState()
-    var localQuery by remember { mutableStateOf(searchQuery) }
-    val isInvalidSearch by stockViewModel.isInvalidSearch.collectAsState()
+    var localQuery by remember { mutableStateOf("") }
+    var searchError by remember { mutableStateOf<String?>(null) }
 
     val selectedLocation by salesOrderViewModel.selectedLocation.collectAsState()
     val locations by salesOrderViewModel.locations.collectAsState(initial = emptyList())
     val debtors by salesOrderViewModel.debtors.collectAsState(initial = emptyList())
-    val filteredItems by stockViewModel.filteredItems.collectAsState()
     val allItems by stockViewModel.allItems.collectAsState()
 
     val selectedHeaderKey = selectedHeader?.soNo
@@ -130,6 +131,40 @@ fun SalesOrderDetailsScreen(
     var pickerSelectedCode by remember { mutableStateOf<String?>(null) }
     var previousLocation by remember { mutableStateOf(selectedLocation) }
     val focusManager = LocalFocusManager.current
+
+    fun addItemFromQuery(query: String) {
+        val trimmedQuery = query.trim()
+        if (trimmedQuery.isBlank()) return
+
+        val locationFilteredItems = allItems.filter { stockItem ->
+            selectedLocation.isBlank() ||
+                    stockItem.locationList.any { locationInfo -> locationInfo.location == selectedLocation }
+        }
+        val matchedItem = locationFilteredItems.firstOrNull {
+            it.itemCode.equals(trimmedQuery, ignoreCase = true)
+        }
+
+        if (matchedItem == null) {
+            searchError = "No exact item code match found."
+            return
+        }
+
+        val defaultUom = matchedItem.uomList.firstOrNull()?.uom ?: matchedItem.uom
+        val defaultPrice = matchedItem.uomList.firstOrNull()?.price1 ?: matchedItem.price
+
+        if (!sessionTrackedCodes.contains(matchedItem.itemCode)) {
+            sessionTrackedCodes.add(matchedItem.itemCode)
+        }
+        salesOrderViewModel.addOrIncrementItem(
+            itemCode = matchedItem.itemCode,
+            defaultUom = defaultUom,
+            defaultUnitPrice = defaultPrice
+        )
+        stockViewModel.onSearchQueryChange("")
+        localQuery = ""
+        searchError = null
+        pickerSelectedCode = matchedItem.itemCode
+    }
 
     LaunchedEffect(locations, selectedLocation) {
         if (selectedHeader == null && locations.isNotEmpty() && selectedLocation.isBlank()) {
@@ -350,7 +385,10 @@ fun SalesOrderDetailsScreen(
                 ) {
                     OutlinedTextField(
                         value = localQuery,
-                        onValueChange = { localQuery = it },
+                        onValueChange = {
+                            localQuery = it
+                            searchError = null
+                        },
                         placeholder = {
                             Text("Enter Item Code...", color = Color.Gray, fontSize = 14.sp)
                         },
@@ -380,62 +418,32 @@ fun SalesOrderDetailsScreen(
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(
                             onSearch = {
-                                val query = localQuery.trim()
-                                pickerSelectedCode = null
-                                stockViewModel.onSearchQueryChange(query)
-                                localQuery = ""
+                                addItemFromQuery(localQuery)
                             }
                         )
                     )
 
-                    Button(
-                        onClick = {
-                            val query = localQuery.trim()
-                            pickerSelectedCode = null
-                            stockViewModel.onSearchQueryChange(query)
-                            localQuery = ""
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(45.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF3636))
-                    ) {
-                        Text("Search Item", color = Color.White)
+                    if (searchError != null) {
+                        Text(
+                            text = searchError.orEmpty(),
+                            color = Color.Red,
+                            fontSize = 13.sp
+                        )
                     }
                 }
             }
 
-            val isSearching = searchQuery.isNotBlank()
 
             val pinnedItems = allItems.filter { stockItem ->
-                val hasSelectedQty = salesOrderViewModel.selectedItems[stockItem.itemCode]
-                    ?.qty
-                    .orEmpty()
-                    .isNotBlank()
-                val isSessionTracked = sessionTrackedCodes.contains(stockItem.itemCode) ||
-                        manuallySelectedCodes.contains(stockItem.itemCode)
+                val qtyText = salesOrderViewModel.selectedItems[stockItem.itemCode]?.qty.orEmpty()
+                val qty = qtyText.toDoubleOrNull() ?: 0.0
+                val hasSelectedQty = qty > 0.0
+                val isSessionTracked = sessionTrackedCodes.contains(stockItem.itemCode) && hasSelectedQty
                 hasSelectedQty || isSessionTracked
             }
-            val searchedItems = if (isSearching) filteredItems else emptyList()
-            val itemsToShow = if (isSearching) {
-                (pinnedItems + searchedItems).distinctBy { it.itemCode }
-            } else {
-                pinnedItems
-            }
+            val itemsToShow = pinnedItems
 
-            if (isSearching && isInvalidSearch) {
-                item {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("No matching item found. Please try again", color = Color.Red)
-                    }
-                }
-            }
-
-            if (!isSearching && itemsToShow.isEmpty()) {
+            if (itemsToShow.isEmpty()) {
                 item {
                     Box(
                         modifier = Modifier
@@ -459,7 +467,28 @@ fun SalesOrderDetailsScreen(
                         if (!sessionTrackedCodes.contains(itemCode)) {
                             sessionTrackedCodes.add(itemCode)
                         }
+                    },
+                    onDeleteItem = { itemCode ->
+                        salesOrderViewModel.removeSelectedItem(itemCode)
+                        sessionTrackedCodes.remove(itemCode)
+                        manuallySelectedCodes.remove(itemCode)
                     }
+                )
+            }
+            item {
+                val grandSubtotal = itemsToShow.sumOf { stockItem ->
+                    val selected = salesOrderViewModel.selectedItems[stockItem.itemCode]
+                    val qty = selected?.qty.orEmpty().toDoubleOrNull() ?: 0.0
+                    qty * (selected?.unitPrice ?: 0.0)
+                }
+                Text(
+                    text = "Subtotal: %.2f".format(grandSubtotal),
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF2E7D32),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                        .wrapContentWidth(Alignment.End)
                 )
             }
         }
@@ -468,7 +497,10 @@ fun SalesOrderDetailsScreen(
     if (scanning) {
         QRCodeScanner(
             scanning = scanning,
-            onResult = { stockViewModel.onSearchQueryChange(it); scanning = false },
+            onResult = { code ->
+                addItemFromQuery(code)
+                scanning = false
+            },
             onScanFinished = { scanning = false }
         )
     }
@@ -504,6 +536,21 @@ fun SalesOrderDetailsScreen(
                         fontWeight = FontWeight.Bold,
                         color = Color.Black
                     )
+                    OutlinedTextField(
+                        value = stockPickerQuery,
+                        onValueChange = { stockPickerQuery = it },
+                        placeholder = { Text("Search item code...") },
+                        singleLine = true,
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Search item"
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = textFieldColors
+                    )
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -522,11 +569,10 @@ fun SalesOrderDetailsScreen(
                                 if (!sessionTrackedCodes.contains(pickerItem.itemCode)) {
                                     sessionTrackedCodes.add(pickerItem.itemCode)
                                 }
-                                salesOrderViewModel.updateSelectedItem(
+                                salesOrderViewModel.addOrIncrementItem(
                                     itemCode = pickerItem.itemCode,
-                                    qty = "",
-                                    uom = defaultUom,
-                                    unitPrice = defaultPrice
+                                    defaultUom = defaultUom,
+                                    defaultUnitPrice = defaultPrice
                                 )
                                 stockViewModel.onSearchQueryChange("")
                                 localQuery = ""
@@ -590,14 +636,22 @@ private fun SalesOrderItemRow(
     item: StockItem,
     selectedLocation: String,
     salesOrderViewModel: SalesOrderViewModel,
-    onTrackItemInSession: (String) -> Unit
+    onTrackItemInSession: (String) -> Unit,
+    onDeleteItem: (String) -> Unit
 ) {
     var selectedUom by remember { mutableStateOf(item.uomList.firstOrNull()?.uom ?: item.uom) }
     var qtyInput by remember { mutableStateOf("") }
     var unitPriceInput by remember { mutableStateOf("%.2f".format(item.uomList.firstOrNull()?.price1 ?: item.price)) }
+    val selectedItemState = salesOrderViewModel.selectedItems[item.itemCode]
 
-    LaunchedEffect(selectedLocation, item.itemCode) {
-        val existing = salesOrderViewModel.selectedItems[item.itemCode]
+    LaunchedEffect(
+        selectedLocation,
+        item.itemCode,
+        selectedItemState?.qty,
+        selectedItemState?.uom,
+        selectedItemState?.unitPrice
+    ) {
+        val existing = selectedItemState
         if (existing != null) {
             selectedUom = existing.uom
             qtyInput = existing.qty
@@ -612,7 +666,9 @@ private fun SalesOrderItemRow(
     val subtotalValue = (qtyInput.toDoubleOrNull() ?: 0.0) * (unitPriceInput.toDoubleOrNull() ?: 0.0)
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(12.dp),
@@ -628,9 +684,32 @@ private fun SalesOrderItemRow(
                     Text(item.description, fontSize = 14.sp, color = Color.Gray, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(item.desc2 ?: "", fontSize = 14.sp, color = Color.Gray, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                Text(selectedLocation, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Red)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        selectedLocation,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Red
+                    )
+
+                    FloatingActionButton(
+                        onClick = { onDeleteItem(item.itemCode) },
+                        containerColor = Color.White,
+                        contentColor = Color(0xFFD32F2F),
+                        elevation = FloatingActionButtonDefaults.elevation(0.dp),
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete item"
+                        )
+                    }
+                }
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(10.dp))
 
             val pricingScrollState = rememberScrollState()
 
@@ -638,7 +717,7 @@ private fun SalesOrderItemRow(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(pricingScrollState)
-                    .padding(vertical = 8.dp),
+                    .padding(top = 8.dp, bottom = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -697,9 +776,22 @@ private fun SalesOrderItemRow(
                     color = Color.Black,
                     isNumber = true
                 )
-                SalesOrderDisplayBox(
-                    label = "Subtotal",
-                    value = "%.2f".format(subtotalValue),
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Start,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Total : ",
+                    fontSize = 14.sp,
+                    color = Color.Gray,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = "RM ${"%.2f".format(subtotalValue)}",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
                     color = if (subtotalValue >= 0) Color(0xFF2E7D32) else Color.Red
                 )
             }
@@ -833,7 +925,7 @@ private fun SalesOrderEditableBox(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     color: Color = Color.Black,
-    minWidth: Dp = 60.dp,
+    minWidth: Dp = 90.dp,
     isNumber: Boolean = false,
     numberSuffix: String? = null
 ) {

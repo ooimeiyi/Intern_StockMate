@@ -179,6 +179,31 @@ class SalesOrderViewModel(
         )
     }
 
+    fun addOrIncrementItem(
+        itemCode: String,
+        defaultUom: String,
+        defaultUnitPrice: Double
+    ) {
+        val currentItem = selectedItems[itemCode]
+        val nextQty = (currentItem?.qty?.toDoubleOrNull() ?: 0.0) + 1.0
+        val normalizedQty = if (nextQty % 1.0 == 0.0) {
+            nextQty.toInt().toString()
+        } else {
+            nextQty.toString()
+        }
+
+        selectedItems[itemCode] = SalesOrderItemInput(
+            itemCode = itemCode,
+            qty = normalizedQty,
+            uom = currentItem?.uom ?: defaultUom,
+            unitPrice = currentItem?.unitPrice ?: defaultUnitPrice
+        )
+    }
+
+    fun removeSelectedItem(itemCode: String) {
+        selectedItems.remove(itemCode)
+    }
+
     fun loadSavedSalesOrders() {
         loadSavedSalesOrdersFromLocal()
         loadSavedSalesOrdersFromFirebase()

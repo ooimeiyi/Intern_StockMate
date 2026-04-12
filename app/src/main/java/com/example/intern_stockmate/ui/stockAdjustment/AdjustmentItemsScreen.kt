@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.Backspace
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Save
@@ -53,6 +54,8 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -409,6 +412,13 @@ fun AdjustmentItemsScreen(
                         if (!sessionTrackedCodes.contains(itemCode)) {
                             sessionTrackedCodes.add(itemCode)
                         }
+                    },
+                    onDeleteItem = { itemCode ->
+                        physicalCounts.remove(itemCode)
+                        diffCounts.remove(itemCode)
+                        selectedUoms.remove(itemCode)
+                        sessionTrackedCodes.remove(itemCode)
+                        manuallySelectedCodes.remove(itemCode)
                     }
                 )
             }
@@ -457,6 +467,21 @@ fun AdjustmentItemsScreen(
                         text = "Select Stock Item",
                         fontWeight = FontWeight.Bold,
                         color = Color.Black
+                    )
+                    OutlinedTextField(
+                        value = stockPickerQuery,
+                        onValueChange = { stockPickerQuery = it },
+                        placeholder = { Text("Search item code...") },
+                        singleLine = true,
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Search item"
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = textFieldColors
                     )
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
@@ -628,7 +653,8 @@ fun StockItemRowLogic(
     physicalCounts: MutableMap<String, String>,
     diffCounts: MutableMap<String, String>,
     selectedUoms: MutableMap<String, String>,
-    onTrackItemInSession: (String) -> Unit
+    onTrackItemInSession: (String) -> Unit,
+    onDeleteItem: (String) -> Unit
 ) {
     val key = stockItem.itemCode
     val locationUomOptions = stockItem.uomLocationList
@@ -655,6 +681,7 @@ fun StockItemRowLogic(
         diffValue = diffCounts[key] ?: computedDiff.toString(),
         selectedUom = selectedUom,
         uomOptions = locationUomOptions,
+        onDeleteItem = { onDeleteItem(key) },
         onUomChange = { newUom ->
             onTrackItemInSession(key)
             selectedUoms[key] = newUom
@@ -695,6 +722,7 @@ fun StockItemFilterRow(
     diffValue: String,
     selectedUom: String,
     uomOptions: List<String>,
+    onDeleteItem: () -> Unit,
     onUomChange: (String) -> Unit,
     onPhysicalChange: (String) -> Unit
 ) {
@@ -734,12 +762,30 @@ fun StockItemFilterRow(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                Text(
-                    selectedLocation,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Red
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        selectedLocation,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Red
+                    )
+
+                    FloatingActionButton(
+                        onClick = onDeleteItem,
+                        containerColor = Color.White,
+                        contentColor = Color(0xFFD32F2F),
+                        elevation = FloatingActionButtonDefaults.elevation(0.dp),
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete item"
+                        )
+                    }
+                }
             }
             Spacer(Modifier.height(12.dp))
 
