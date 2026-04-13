@@ -232,7 +232,7 @@ fun ConfigScreen(
             )
 
             Text(
-                text = "Stock Adjustment Number Format",
+                text = "Stock Take Number Format",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black

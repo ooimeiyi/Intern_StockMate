@@ -281,7 +281,7 @@ fun AdjustmentItemsScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            "Adjustment Details",
+                            "Stock Take Details",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color.Black
@@ -445,7 +445,7 @@ fun AdjustmentItemsScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Search item to add stock adjustment",
+                            text = "Search item to add stock take",
                             color = Color.Gray
                         )
                     }
@@ -688,7 +688,7 @@ fun AdjustmentBottomBar(
                 stockAdjustmentViewModel.submitCurrentAdjustment { success, message ->
                     Toast.makeText(
                         context,
-                        if (success) "Adjustment submitted" else "Submit failed: $message",
+                        if (success) "Stock Take submitted" else "Submit failed: $message",
                         Toast.LENGTH_SHORT
                     ).show()
 
@@ -707,7 +707,7 @@ fun AdjustmentBottomBar(
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF3636))
         ) {
-            Text("Submit Adjustment", color = Color.White, fontSize = 14.sp)
+            Text("Submit Stock Take", color = Color.White, fontSize = 14.sp)
         }
     }
 }

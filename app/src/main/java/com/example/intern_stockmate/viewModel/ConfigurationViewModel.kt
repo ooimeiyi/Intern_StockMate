@@ -146,7 +146,7 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
         }
 
         if (!DocumentNumberFormatStore.isValidFormat(normalizedSt)) {
-            return Result.failure(IllegalArgumentException("Stock Adjustment format must contain at least one 0"))
+            return Result.failure(IllegalArgumentException("Stock Take format must contain at least one 0"))
         }
 
         DocumentNumberFormatStore.updateFormats(

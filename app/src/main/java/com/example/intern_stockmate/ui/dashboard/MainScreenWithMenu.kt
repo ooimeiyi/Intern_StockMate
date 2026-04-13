@@ -191,7 +191,7 @@ fun MainScreenWithMenu(
                     }
                 }
 
-                composable(HamburgerScreen.StockAdjustment.route) {
+                composable(HamburgerScreen.StockTake.route) {
                     StockAdjustmentScreen(navController = navController, stockViewModel = stockAdjustmentViewModel)
                 }
 

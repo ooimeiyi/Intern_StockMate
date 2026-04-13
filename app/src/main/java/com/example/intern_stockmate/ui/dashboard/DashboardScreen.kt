@@ -39,8 +39,8 @@ fun DashboardScreen(
                     }
                 }
                 Box(Modifier.weight(1f)) {
-                    DashboardCard("Stock Adjustment", Icons.Default.SyncAlt) {
-                        onNavigate(HamburgerScreen.StockAdjustment)
+                    DashboardCard("Stock Take", Icons.Default.SyncAlt) {
+                        onNavigate(HamburgerScreen.StockTake)
 
                     }
                 }

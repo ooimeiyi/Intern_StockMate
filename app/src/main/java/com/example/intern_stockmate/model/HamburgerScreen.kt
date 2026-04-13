@@ -14,7 +14,7 @@ sealed class HamburgerScreen(
     object Dashboard : HamburgerScreen("dashboard", "Dashboard","Dashboard", Icons.Default.Home)
     object StockList : HamburgerScreen("stockList", "Stock List", "Stock List",Icons.Default.Inventory2)
 
-    object StockAdjustment : HamburgerScreen("stockAdjustment", "Stock Adjustment", "Stock Adjustment", Icons.Default.SyncAlt)
+    object StockTake : HamburgerScreen("stockTake", "Stock Adjustment", "Stock Take", Icons.Default.SyncAlt)
     object SalesOrder : HamburgerScreen("salesOrder", "Sales Order", "Sales Order",Icons.Default.ShoppingCart )
 
     object SalesOverview : HamburgerScreen("salesOverview", "Sales Overview","Sales Overview", Icons.Default.PieChart)
@@ -30,6 +30,6 @@ sealed class HamburgerScreen(
     object Contact : HamburgerScreen("contact", "Contact Us", "Find Us",Icons.Default.Phone)
 
     companion object {
-        val all = listOf(Dashboard, StockList, StockAdjustment, SalesOrder,  SalesOverview, HourlySales, DailySales, MonthlySales, Rank, Items, Members, Debtor, Creditor, Config, Contact)
+        val all = listOf(Dashboard, StockList, StockTake, SalesOrder,  SalesOverview, HourlySales, DailySales, MonthlySales, Rank, Items, Members, Debtor, Creditor, Config, Contact)
     }
 }
