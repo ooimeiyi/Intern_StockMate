@@ -112,11 +112,9 @@ fun AdjustmentItemsScreen(
 
     val searchQuery by stockViewModel.searchQuery.collectAsState()
     var localQuery by remember { mutableStateOf(searchQuery) }
-    val isInvalidSearch by stockViewModel.isInvalidSearch.collectAsState()
 
     val selectedLocation by stockViewModel.selectedLocation.collectAsState()
     val locations by stockAdjustmentViewModel.locations.collectAsState(initial = emptyList())
-    val filteredItems by stockViewModel.filteredItems.collectAsState()
     val allItems by stockViewModel.allItems.collectAsState()
 
     val selectedHeaderKey = selectedHeader?.stockTakeNo
@@ -170,6 +168,50 @@ fun AdjustmentItemsScreen(
     ) { granted ->
         scanning = granted
         if (!granted) Toast.makeText(context, "Permission Denied", Toast.LENGTH_SHORT).show()
+    }
+
+    val submitSearch: (String) -> Unit = { rawQuery ->
+        val query = rawQuery.trim()
+        pickerSelectedCode = null
+        stockViewModel.onSearchQueryChange(query)
+        if (query.isNotBlank()) {
+            allItems
+                .filter { stockItem ->
+                    val matchesExactItemCode = stockItem.itemCode.equals(query, ignoreCase = true)
+                    val matchesExactBarCode = stockItem.uomList.any {
+                        it.barCode.orEmpty().equals(query, ignoreCase = true)
+                    }
+                    val matchesLocation = selectedLocation.isBlank() ||
+                            stockItem.locationList.any { locationInfo -> locationInfo.location == selectedLocation }
+                    (matchesExactItemCode || matchesExactBarCode) && matchesLocation
+                }
+                .forEach { matchedItem ->
+                    if (!sessionTrackedCodes.contains(matchedItem.itemCode)) {
+                        sessionTrackedCodes.add(matchedItem.itemCode)
+                    }
+                    val itemCode = matchedItem.itemCode
+                    val activeUom = selectedUoms[itemCode].orEmpty().ifBlank {
+                        matchedItem.uomLocationList
+                            .firstOrNull { it.location == selectedLocation }
+                            ?.uom
+                            ?: matchedItem.uomList.firstOrNull()?.uom
+                            ?: matchedItem.uom
+                    }
+                    selectedUoms[itemCode] = activeUom
+
+                    val currentPhysical = physicalCounts[itemCode].toBigIntOrZero()
+                    val nextPhysical = currentPhysical + BigInteger.ONE
+                    physicalCounts[itemCode] = nextPhysical.toString()
+
+                    val onHand = matchedItem.uomLocationList
+                        .find { it.location == selectedLocation && it.uom.equals(activeUom, ignoreCase = true) }
+                        ?.qty
+                        ?: matchedItem.locationList.find { it.location == selectedLocation }?.qty
+                        ?: 0
+                    diffCounts[itemCode] = (nextPhysical - onHand.toBigInteger()).toString()
+                }
+        }
+        localQuery = ""
     }
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
@@ -335,19 +377,13 @@ fun AdjustmentItemsScreen(
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(
                             onSearch = {
-                                val query = localQuery.trim()
-                                pickerSelectedCode = null
-                                stockViewModel.onSearchQueryChange(query)
-                                localQuery = ""
+                                submitSearch(localQuery)
                             }
                         )
                     )
                     Button(
                         onClick = {
-                            val query = localQuery.trim()
-                            pickerSelectedCode = null
-                            stockViewModel.onSearchQueryChange(query)
-                            localQuery = ""
+                            submitSearch(localQuery)
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -367,7 +403,22 @@ fun AdjustmentItemsScreen(
                         manuallySelectedCodes.contains(stockItem.itemCode)
                 hasPhysicalQty || isSessionTracked
             }
-            val searchedItems = if (isSearching) filteredItems else emptyList()
+            val trimmedSearchQuery = searchQuery.trim()
+            val searchedItems = if (isSearching) {
+                allItems.filter { stockItem ->
+                    val matchesExactItemCode = stockItem.itemCode.equals(trimmedSearchQuery, ignoreCase = true)
+                    val matchesExactBarCode = stockItem.uomList.any {
+                        it.barCode.orEmpty().equals(trimmedSearchQuery, ignoreCase = true)
+                    }
+                    val matchesLocation = selectedLocation.isBlank() ||
+                            stockItem.locationList.any { locationInfo -> locationInfo.location == selectedLocation }
+
+                    (matchesExactItemCode || matchesExactBarCode) && matchesLocation
+                }
+            } else {
+                emptyList()
+            }
+            val isInvalidSearch = isSearching && searchedItems.isEmpty()
             val itemsToShow = if (isSearching) {
                 (pinnedItems + searchedItems).distinctBy { it.itemCode }
             } else {
@@ -377,7 +428,7 @@ fun AdjustmentItemsScreen(
             if (isSearching && isInvalidSearch) {
                 item {
                     Box(
-                        modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text("No matching item found. Please try again", color = Color.Red)
@@ -493,11 +544,26 @@ fun AdjustmentItemsScreen(
                                 if (!sessionTrackedCodes.contains(pickerItem.itemCode)) {
                                     sessionTrackedCodes.add(pickerItem.itemCode)
                                 }
-                                if (!physicalCounts.containsKey(pickerItem.itemCode)) {
-                                    physicalCounts[pickerItem.itemCode] = ""
-
-                                    diffCounts[pickerItem.itemCode] = "0"
+                                val itemCode = pickerItem.itemCode
+                                val activeUom = selectedUoms[itemCode].orEmpty().ifBlank {
+                                    pickerItem.uomLocationList
+                                        .firstOrNull { it.location == selectedLocation }
+                                        ?.uom
+                                        ?: pickerItem.uomList.firstOrNull()?.uom
+                                        ?: pickerItem.uom
                                 }
+                                selectedUoms[itemCode] = activeUom
+
+                                val currentPhysical = physicalCounts[itemCode].toBigIntOrZero()
+                                val nextPhysical = currentPhysical + BigInteger.ONE
+                                physicalCounts[itemCode] = nextPhysical.toString()
+
+                                val onHand = pickerItem.uomLocationList
+                                    .find { it.location == selectedLocation && it.uom.equals(activeUom, ignoreCase = true) }
+                                    ?.qty
+                                    ?: pickerItem.locationList.find { it.location == selectedLocation }?.qty
+                                    ?: 0
+                                diffCounts[itemCode] = (nextPhysical - onHand.toBigInteger()).toString()
                                 stockViewModel.onSearchQueryChange("")
                                 localQuery = ""
                                 showStockPicker = false
