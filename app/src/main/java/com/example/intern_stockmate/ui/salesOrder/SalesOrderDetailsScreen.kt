@@ -89,9 +89,12 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.text.style.TextAlign
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -488,15 +491,29 @@ fun SalesOrderDetailsScreen(
                     qty * (selected?.unitPrice ?: 0.0)
                 }
                 val roundedGrandSubtotal = roundAmountToNearestFiveSen(grandSubtotal)
-                Text(
-                    text = "Subtotal: %.2f".format(roundedGrandSubtotal),
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF2E7D32),
+                val roundingAmount = roundedGrandSubtotal - grandSubtotal
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                        .wrapContentWidth(Alignment.End)
-                )
+                        .padding(vertical = 8.dp),
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Text(
+                        text = "Subtotal: %.2f".format(grandSubtotal),
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF2E7D32)
+                    )
+                    Text(
+                        text = "Round off : ${"%+.2f".format(roundingAmount)}",
+                        fontWeight = FontWeight.Medium,
+                        color = Color.Red
+                    )
+                    Text(
+                        text = "Total : %.2f".format(roundedGrandSubtotal),
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFF2E7D32)
+                    )
+                }
             }
         }
     }
@@ -680,9 +697,7 @@ private fun SalesOrderItemRow(
         selectedLocation,
         item.itemCode,
         debtor,
-        selectedItemState?.qty,
-        selectedItemState?.uom,
-        selectedItemState?.unitPrice
+        selectedItemState?.uom
     ) {
         val existing = selectedItemState
         if (existing != null) {
@@ -813,6 +828,7 @@ private fun SalesOrderItemRow(
                     },
                     color = Color.Black,
                     isNumber = true,
+                    showStepper = true,
                     numberSuffix = selectedUom.ifBlank { null }
                 )
                 SalesOrderEditableBox(
@@ -984,7 +1000,8 @@ private fun SalesOrderEditableBox(
     color: Color = Color.Black,
     minWidth: Dp = 90.dp,
     isNumber: Boolean = false,
-    numberSuffix: String? = null
+    numberSuffix: String? = null,
+    showStepper: Boolean = false
 ) {
     var showNumberPad by remember { mutableStateOf(false) }
 
@@ -996,26 +1013,83 @@ private fun SalesOrderEditableBox(
                 .width(IntrinsicSize.Min)
                 .widthIn(min = minWidth)
                 .background(Color(0xFFF5F5F5), RoundedCornerShape(4.dp))
-                .padding(horizontal = 8.dp)
-                .then(
-                    if (isNumber) {
-                        Modifier.clickable { showNumberPad = true }
-                    } else {
-                        Modifier
-                    }
-                ),
+                .padding(horizontal = 8.dp),
             contentAlignment = Alignment.CenterStart
         ) {
-            Text(
-                text = if (value.isBlank()) "0" else value,
-                style = TextStyle(
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = color
-                ),
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (value.isBlank()) "0" else value,
+                    style = TextStyle(
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = color,
+                        textAlign = TextAlign.Start
+                    ),
+                    modifier = Modifier
+                        .weight(1f)
+                        .then(
+                            if (isNumber) {
+                                Modifier.clickable { showNumberPad = true }
+                            } else {
+                                Modifier
+                            }
+                        )
+                )
 
-                modifier = Modifier.wrapContentWidth()
-            )
+                if (showStepper && isNumber) {
+                    val currentValue = value.toDoubleOrNull() ?: 0.0
+                    val canDecrease = currentValue > 1.0
+
+                    Column(
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowUp,
+                            contentDescription = "Increase quantity",
+                            modifier = Modifier
+                                .size(18.dp)
+                                .clickable {
+                                    val current = value.toDoubleOrNull() ?: 0.0
+                                    val incremented = current + 1
+                                    val next = if (incremented == incremented.roundToInt().toDouble()) {
+                                        incremented.roundToInt().toString()
+                                    } else {
+                                        incremented.toString()
+                                    }
+                                    onValueChange(next)
+                                },
+                            tint = Color.DarkGray
+                        )
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = "Decrease quantity",
+                            modifier = Modifier
+                                .size(18.dp)
+                                .then(
+                                    if (canDecrease) {
+                                        Modifier.clickable {
+                                            val current = value.toDoubleOrNull() ?: 0.0
+                                            val decremented = (current - 1).coerceAtLeast(1.0)
+                                            val next = if (decremented == decremented.roundToInt().toDouble()) {
+                                                decremented.roundToInt().toString()
+                                            } else {
+                                                decremented.toString()
+                                            }
+                                            onValueChange(next)
+                                        }
+                                    } else {
+                                        Modifier
+                                    }
+                                ),
+                            tint = if (canDecrease) Color.DarkGray else Color.LightGray
+                        )
+                    }
+                }
+            }
         }
     }
 
