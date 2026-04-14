@@ -11,27 +11,30 @@ import com.example.intern_stockmate.data.DocumentNumberFormatStore
 import com.example.intern_stockmate.data.local.SalesOrderDatabase
 import com.example.intern_stockmate.data.local.toEntity
 import com.example.intern_stockmate.data.local.toModel
+import com.example.intern_stockmate.model.DebtorListItem
+import com.example.intern_stockmate.model.DebtorListPayload
 import com.example.intern_stockmate.model.SalesOrderDetail
 import com.example.intern_stockmate.model.SalesOrderHeader
+import com.example.intern_stockmate.model.UomInfo
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.max
 
 class SalesOrderViewModel(
     private val application: Application,
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance(),
+    private val storage: FirebaseStorage = FirebaseStorage.getInstance(),
     private val stockViewModel: StockViewModel
 ) : ViewModel() {
-    data class DebtorOption(
-        val code: String,
-        val companyName: String
-    )
 
     data class SalesOrderItemInput(
         val itemCode: String,
@@ -56,7 +59,9 @@ class SalesOrderViewModel(
 
     private val _debtors = MutableStateFlow<List<String>>(emptyList())
     val debtors: StateFlow<List<String>> = _debtors.asStateFlow()
-    private var debtorCodeByCompanyName: Map<String, String> = emptyMap()
+    private val gson = Gson()
+    private var debtorCodeByLabel: Map<String, String> = emptyMap()
+    private var debtorMultiPriceByLabel: Map<String, String> = emptyMap()
 
     val selectedLocation: StateFlow<String> = stockViewModel.selectedLocation
     val locations: StateFlow<List<String>> = stockViewModel.locations
@@ -72,7 +77,8 @@ class SalesOrderViewModel(
                         _savedHeaders.value = emptyList()
                         _selectedHeader.value = null
                         _debtors.value = emptyList()
-                        debtorCodeByCompanyName = emptyMap()
+                        debtorCodeByLabel = emptyMap()
+                        debtorMultiPriceByLabel = emptyMap()
                     } else {
                         loadSavedSalesOrdersFromLocal()
                         loadDebtors()
@@ -397,40 +403,105 @@ class SalesOrderViewModel(
         CompanyContext.collection(firestore, DEBTOR_COLLECTION)
             .document(DEBTOR_DOCUMENT)
             .get()
-            .addOnSuccessListener { snapshot ->
-                val options = (snapshot.get("outstandingList") as? List<*>)
-                    .orEmpty()
-                    .mapNotNull { raw ->
-                        val item = raw as? Map<*, *> ?: return@mapNotNull null
-                        val companyName = item["CompanyName"]?.toString()?.trim().orEmpty()
-                        if (companyName.isBlank()) return@mapNotNull null
-                        DebtorOption(
-                            code = item["DebtorCode"]?.toString()?.trim().orEmpty(),
-                            companyName = companyName
+            .addOnSuccessListener { metadataDocument ->
+                val storagePath = metadataDocument.getString("storagePath").orEmpty().trim()
+                if (storagePath.isBlank()) {
+                    _debtors.value = emptyList()
+                    debtorCodeByLabel = emptyMap()
+                    Log.e("SalesOrderViewModel", "Debtor metadata is missing storagePath.")
+                    return@addOnSuccessListener
+                }
+
+                storage.reference.child(storagePath)
+                    .getBytes(MAX_DEBTOR_JSON_SIZE_BYTES)
+                    .addOnSuccessListener { bytes ->
+                        val json = bytes.toString(Charsets.UTF_8)
+                        val options = parseDebtorPayload(json)
+                            .distinctBy { it.companyName }
+                            .sortedBy { it.companyName }
+
+                        debtorCodeByLabel = options.associate { option ->
+                            option.toLabel() to option.debtorCode
+                        }
+                        debtorMultiPriceByLabel = options.associate { option ->
+                            option.toLabel() to option.multiPrice
+                        }
+                        _debtors.value = options.map { option -> option.toLabel() }
+                    }
+                    .addOnFailureListener { error ->
+                        _debtors.value = emptyList()
+                        debtorCodeByLabel = emptyMap()
+                        debtorMultiPriceByLabel = emptyMap()
+                        Log.e(
+                            "SalesOrderViewModel",
+                            "Failed to download debtor JSON from Storage path: $storagePath",
+                            error
                         )
                     }
-                    .distinctBy { it.companyName }
-                    .sortedBy { it.companyName }
-
-                debtorCodeByCompanyName = options.associate { it.companyName to it.code }
-                _debtors.value = options.map { it.companyName }
             }
             .addOnFailureListener { error ->
                 Log.e("SalesOrderViewModel", "Failed to load debtors", error)
             }
     }
 
+    private fun parseDebtorPayload(json: String): List<DebtorListItem> =
+        runCatching {
+            val payloadType = object : TypeToken<DebtorListPayload>() {}.type
+            val payload = gson.fromJson<DebtorListPayload>(json, payloadType)
+
+            if (!payload?.data.isNullOrEmpty()) {
+                payload?.data.orEmpty()
+                    .mapNotNull { map -> map.toDebtorListItem() }
+            } else {
+                val listType = object : TypeToken<List<Map<String, Any?>>>() {}.type
+                val legacyList = gson.fromJson<List<Map<String, Any?>>>(json, listType).orEmpty()
+                legacyList.mapNotNull { map -> map.toDebtorListItem() }
+            }
+        }.onFailure { error ->
+            Log.e("SalesOrderViewModel", "Failed to parse debtor JSON", error)
+        }.getOrDefault(emptyList())
+
+    private fun Map<String, Any?>.toDebtorListItem(): DebtorListItem? {
+        val code = string("debtorCode").ifBlank { string("DebtorCode") }
+        val companyName = string("companyName").ifBlank { string("CompanyName") }
+        if (code.isBlank() || companyName.isBlank()) return null
+        val multiPrice = string("multiPrice")
+            .ifBlank { string("MultiPrice") }
+            .uppercase()
+            .ifBlank { "P1" }
+        return DebtorListItem(debtorCode = code, companyName = companyName, multiPrice = multiPrice)
+    }
+
+    private fun Map<*, *>.string(key: String): String =
+        this[key]?.toString()?.trim().orEmpty()
+
     private fun resolveDebtorCode(debtorLabel: String): String {
         val normalizedLabel = debtorLabel.trim()
         if (normalizedLabel.isBlank()) return ""
 
-        debtorCodeByCompanyName[normalizedLabel]?.takeIf { it.isNotBlank() }?.let { return it }
+        debtorCodeByLabel[normalizedLabel]?.takeIf { it.isNotBlank() }?.let { return it }
 
         return normalizedLabel.substringBefore(" - ", "").trim()
             .takeIf { it.isNotBlank() && it != normalizedLabel }
             .orEmpty()
     }
 
+    fun resolvePriceForDebtor(
+        debtorLabel: String,
+        uomInfo: UomInfo?,
+        fallbackPrice: Double
+    ): Double? {
+        if (uomInfo == null) return fallbackPrice
+        return when (debtorMultiPriceByLabel[debtorLabel.trim()].orEmpty().uppercase()) {
+            "P1" -> uomInfo.price1
+            "P2" -> uomInfo.price2
+            "P3" -> uomInfo.price3
+            "P4" -> uomInfo.price4
+            "P5" -> uomInfo.price5
+            "P6" -> uomInfo.price6
+            else -> uomInfo.price1
+        }
+    }
     private fun extractSequence(soNo: String): Int? {
         return DocumentNumberFormatStore.extractSequence(salesOrderFormat, soNo)
     }
@@ -460,8 +531,9 @@ class SalesOrderViewModel(
 
     private companion object {
         const val COLLECTION_NAME = "SalesOrders"
-        const val DEBTOR_COLLECTION = "DebtorSummary"
-        const val DEBTOR_DOCUMENT = "Current"
+        const val DEBTOR_COLLECTION = "DebtorList"
+        const val DEBTOR_DOCUMENT = "Metadata"
+        const val MAX_DEBTOR_JSON_SIZE_BYTES = 10L * 1024L * 1024L
     }
 }
 

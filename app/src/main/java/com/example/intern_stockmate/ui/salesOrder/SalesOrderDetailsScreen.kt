@@ -150,7 +150,11 @@ fun SalesOrderDetailsScreen(
         }
 
         val defaultUom = matchedItem.uomList.firstOrNull()?.uom ?: matchedItem.uom
-        val defaultPrice = matchedItem.uomList.firstOrNull()?.price1 ?: matchedItem.price
+        val defaultPrice = salesOrderViewModel.resolvePriceForDebtor(
+            debtorLabel = debtor,
+            uomInfo = matchedItem.uomList.firstOrNull(),
+            fallbackPrice = matchedItem.price
+        ) ?: 0.0
 
         if (!sessionTrackedCodes.contains(matchedItem.itemCode)) {
             sessionTrackedCodes.add(matchedItem.itemCode)
@@ -462,6 +466,7 @@ fun SalesOrderDetailsScreen(
                 SalesOrderItemRow(
                     item = item,
                     selectedLocation = selectedLocation,
+                    debtor = debtor,
                     salesOrderViewModel = salesOrderViewModel,
                     onTrackItemInSession = { itemCode ->
                         if (!sessionTrackedCodes.contains(itemCode)) {
@@ -561,7 +566,11 @@ fun SalesOrderDetailsScreen(
                                 isSelected = pickerSelectedCode == pickerItem.itemCode
                             ) {
                                 val defaultUom = pickerItem.uomList.firstOrNull()?.uom ?: pickerItem.uom
-                                val defaultPrice = pickerItem.uomList.firstOrNull()?.price1 ?: pickerItem.price
+                                val defaultPrice = salesOrderViewModel.resolvePriceForDebtor(
+                                    debtorLabel = debtor,
+                                    uomInfo = pickerItem.uomList.firstOrNull(),
+                                    fallbackPrice = pickerItem.price
+                                ) ?: 0.0
                                 pickerSelectedCode = pickerItem.itemCode
                                 if (!manuallySelectedCodes.contains(pickerItem.itemCode)) {
                                     manuallySelectedCodes.add(pickerItem.itemCode)
@@ -635,18 +644,29 @@ private fun SalesOrderFilterItemRow(
 private fun SalesOrderItemRow(
     item: StockItem,
     selectedLocation: String,
+    debtor: String,
     salesOrderViewModel: SalesOrderViewModel,
     onTrackItemInSession: (String) -> Unit,
     onDeleteItem: (String) -> Unit
 ) {
     var selectedUom by remember { mutableStateOf(item.uomList.firstOrNull()?.uom ?: item.uom) }
     var qtyInput by remember { mutableStateOf("") }
-    var unitPriceInput by remember { mutableStateOf("%.2f".format(item.uomList.firstOrNull()?.price1 ?: item.price)) }
+    var unitPriceInput by remember {
+        val resolvedPrice = salesOrderViewModel.resolvePriceForDebtor(
+            debtorLabel = debtor,
+            uomInfo = item.uomList.firstOrNull(),
+            fallbackPrice = item.price
+        )
+        mutableStateOf(
+            if (resolvedPrice != null) "%.2f".format(resolvedPrice) else "-"
+        )
+    }
     val selectedItemState = salesOrderViewModel.selectedItems[item.itemCode]
 
     LaunchedEffect(
         selectedLocation,
         item.itemCode,
+        debtor,
         selectedItemState?.qty,
         selectedItemState?.uom,
         selectedItemState?.unitPrice
@@ -655,11 +675,31 @@ private fun SalesOrderItemRow(
         if (existing != null) {
             selectedUom = existing.uom
             qtyInput = existing.qty
-            unitPriceInput = "%.2f".format(existing.unitPrice)
+            val existingUomInfo = item.uomList.find { it.uom == existing.uom }
+            val tierPrice = salesOrderViewModel.resolvePriceForDebtor(
+                debtorLabel = debtor,
+                uomInfo = existingUomInfo,
+                fallbackPrice = existing.unitPrice
+            )
+            unitPriceInput = if (tierPrice != null) "%.2f".format(tierPrice) else "-"
+            val normalizedPrice = tierPrice ?: 0.0
+            if (kotlin.math.abs(existing.unitPrice - normalizedPrice) > 0.000001) {
+                salesOrderViewModel.updateSelectedItem(
+                    itemCode = item.itemCode,
+                    qty = qtyInput,
+                    uom = selectedUom,
+                    unitPrice = normalizedPrice
+                )
+            }
         } else {
             selectedUom = item.uomList.firstOrNull()?.uom ?: item.uom
             qtyInput = ""
-            unitPriceInput = "%.2f".format(item.uomList.firstOrNull()?.price1 ?: item.price)
+            val tierPrice = salesOrderViewModel.resolvePriceForDebtor(
+                debtorLabel = debtor,
+                uomInfo = item.uomList.firstOrNull(),
+                fallbackPrice = item.price
+            )
+            unitPriceInput = if (tierPrice != null) "%.2f".format(tierPrice) else "-"
         }
     }
 
@@ -728,14 +768,18 @@ private fun SalesOrderItemRow(
                     onSelect = { newUom ->
                         selectedUom = newUom
                         val uomInfo = item.uomList.find { it.uom == newUom }
-                        val newPrice = uomInfo?.price1 ?: item.price
-                        unitPriceInput = "%.2f".format(newPrice)
+                        val newPrice = salesOrderViewModel.resolvePriceForDebtor(
+                            debtorLabel = debtor,
+                            uomInfo = uomInfo,
+                            fallbackPrice = item.price
+                        )
+                        unitPriceInput = if (newPrice != null) "%.2f".format(newPrice) else "-"
                         onTrackItemInSession(item.itemCode)
                         salesOrderViewModel.updateSelectedItem(
                             itemCode = item.itemCode,
                             qty = qtyInput,
                             uom = selectedUom,
-                            unitPrice = unitPriceInput.toDoubleOrNull() ?: 0.0
+                            unitPrice = newPrice ?: 0.0
                         )
                     }
                 )
