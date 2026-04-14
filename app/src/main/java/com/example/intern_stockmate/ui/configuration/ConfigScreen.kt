@@ -177,7 +177,8 @@ fun ConfigScreen(
 
         ManagementCard(title = "Document Number Format", icon = Icons.Default.Settings) {
             Text(
-                text = "Set the format for generated document numbers (e.g., Sales Orders). Use placeholders like {SM} , {SO}, and {00000} for auto-incrementing numbers.",
+                text = "Set the format for generated document numbers (e.g., Sales Orders). " +
+                        "Use placeholders like {SM} , {SO}, and {00000} for auto-incrementing numbers.",
                 color = Color.Gray,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(vertical = 4.dp)
