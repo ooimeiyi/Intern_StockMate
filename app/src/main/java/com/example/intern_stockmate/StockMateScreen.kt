@@ -104,9 +104,6 @@ fun StockMateScreen() {
                             showConfigFromLogin = false
                             loginViewModel.clearFields()
                         },
-                        onSettingsClick = {
-                            showConfigFromLogin = true
-                        }
                     )
                 }
             }

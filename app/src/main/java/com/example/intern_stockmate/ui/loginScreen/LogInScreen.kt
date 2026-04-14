@@ -31,7 +31,6 @@ import androidx.compose.ui.platform.LocalFocusManager
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.text.input.VisualTransformation
 import com.example.intern_stockmate.viewModel.LoginViewModel
 
@@ -39,7 +38,6 @@ import com.example.intern_stockmate.viewModel.LoginViewModel
 fun LogInScreen(
     loginViewModel: LoginViewModel,
     onLoginSuccess: () -> Unit,
-    onSettingsClick: () -> Unit
 ) {
     val textFieldColors = OutlinedTextFieldDefaults.colors(
         focusedTextColor = Color.Black,
@@ -61,20 +59,6 @@ fun LogInScreen(
                 focusManager.clearFocus()
             }
     ) {
-
-        IconButton(
-            onClick = onSettingsClick,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 50.dp, end = 15.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Settings,
-                contentDescription = "Open configuration",
-                tint = Color(0xFFEF3636),
-                modifier = Modifier.size(30.dp)
-            )
-        }
 
         Column(
             modifier = Modifier

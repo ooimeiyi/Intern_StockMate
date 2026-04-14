@@ -17,18 +17,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.filled.Business
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -39,7 +35,6 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -55,8 +50,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.intern_stockmate.data.DocumentNumberFormatStore
@@ -66,7 +59,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.intern_stockmate.viewModel.CompanyListUiState
 import com.example.intern_stockmate.viewModel.ConfigurationViewModel
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,16 +73,14 @@ fun ConfigScreen(
     val savedSalesOrderFormat by configurationViewModel.salesOrderFormat.collectAsState()
     val savedStockAdjustmentFormat by configurationViewModel.stockAdjustmentFormat.collectAsState()
 
+    LaunchedEffect(Unit) {
+        configurationViewModel.clearSelectedCompany()
+    }
+
     var companyExpanded by remember { mutableStateOf(false) }
     var salesOrderFormat by remember(savedSalesOrderFormat) { mutableStateOf(savedSalesOrderFormat) }
     var adjustmentFormat by remember(savedStockAdjustmentFormat) { mutableStateOf(savedStockAdjustmentFormat) }
 
-    var oldPassword by remember { mutableStateOf("") }
-    var newPassword by remember { mutableStateOf("") }
-    var resetCode by remember { mutableStateOf("") }
-    var oldPasswordVisible by remember { mutableStateOf(false) }
-    var newPasswordVisible by remember { mutableStateOf(false) }
-    var resetCodeVisible by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
 
@@ -128,7 +118,7 @@ fun ConfigScreen(
             val selectedDisplay = companyOptions
                 .firstOrNull { it.id == selectedCompanyId }
                 ?.displayName
-                ?: selectedCompanyId
+                .orEmpty()
 
             ExposedDropdownMenuBox(
                 expanded = companyExpanded,

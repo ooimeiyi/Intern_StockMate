@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import com.example.intern_stockmate.data.CompanyContext
 import com.example.intern_stockmate.data.DocumentNumberFormatStore
 import com.google.android.gms.tasks.Tasks
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.QuerySnapshot
@@ -25,6 +26,7 @@ sealed interface CompanyListUiState {
 
 class ConfigurationViewModel(application: Application) : AndroidViewModel(application) {
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
     private val _companyListState = MutableStateFlow<CompanyListUiState>(CompanyListUiState.Loading)
     val companyListState: StateFlow<CompanyListUiState> = _companyListState.asStateFlow()
@@ -35,8 +37,16 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
     val stockAdjustmentFormat: StateFlow<String> = DocumentNumberFormatStore.stockAdjustmentFormat
 
     private var companiesListener: ListenerRegistration? = null
+    private var userAccessListener: ListenerRegistration? = null
+    private val authStateListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
+        observeLoggedInUserPermissions(firebaseAuth.currentUser?.email)
+    }
+    private var allCompanies: List<CompanyOption> = emptyList()
+    private var allowedCompanyIds: Set<String>? = null
 
     init {
+        auth.addAuthStateListener(authStateListener)
+        observeLoggedInUserPermissions(auth.currentUser?.email)
         observeCompanies()
     }
 
@@ -67,22 +77,16 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
 
                 detectCompaniesFromSubcollections(
                     onSuccess = { detectedOptions ->
-                        val mergedCompanies = (companiesFromDocuments + detectedOptions)
+                        allCompanies = (companiesFromDocuments + detectedOptions)
                             .distinctBy { it.id }
                             .sortedBy { it.displayName }
 
-                        if (mergedCompanies.isEmpty()) {
-                            _companyListState.value = CompanyListUiState.Error(
-                                "No company documents found. If your companies only have subcollections, add at least one field to each Companies/{companyId} document."
-                            )
-                            return@detectCompaniesFromSubcollections
-                        }
-
-                        applyCompanySelection(mergedCompanies)
+                        publishAccessibleCompanies()
                     },
                     onFailure = { detectError ->
                         if (companiesFromDocuments.isNotEmpty()) {
-                            applyCompanySelection(companiesFromDocuments)
+                            allCompanies = companiesFromDocuments
+                            publishAccessibleCompanies()
                         } else {
                             _companyListState.value = CompanyListUiState.Error(
                                 detectError.message ?: "Unable to detect companies"
@@ -90,6 +94,41 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
                         }
                     }
                 )
+            }
+    }
+
+    private fun observeLoggedInUserPermissions(email: String?) {
+        userAccessListener?.remove()
+        userAccessListener = null
+
+        val normalizedEmail = email?.trim().orEmpty()
+        if (normalizedEmail.isBlank()) {
+            allowedCompanyIds = emptySet()
+            _companyListState.value = CompanyListUiState.Error("Please log in to load company access.")
+            return
+        }
+
+        _companyListState.value = CompanyListUiState.Loading
+        userAccessListener = firestore.collection(USERS_COLLECTION)
+            .document(normalizedEmail)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    _companyListState.value = CompanyListUiState.Error(
+                        error.message ?: "Unable to load user company access"
+                    )
+                    return@addSnapshotListener
+                }
+
+                val allowed = snapshot?.get("allowedCompanies")
+                    ?.let { raw ->
+                        (raw as? List<*>)?.mapNotNull { value ->
+                            (value as? String)?.trim()?.takeIf { it.isNotBlank() }
+                        }?.toSet()
+                    }
+                    ?: emptySet()
+
+                allowedCompanyIds = allowed
+                publishAccessibleCompanies()
             }
     }
 
@@ -121,13 +160,47 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
             }
     }
 
-    private fun applyCompanySelection(companies: List<CompanyOption>) {
-        val selected = selectedCompanyId.value
-        val selectedExists = companies.any { it.id == selected }
-        if (!selectedExists && selected.isNotBlank()) {
+    private fun publishAccessibleCompanies() {
+        val allowedIds = allowedCompanyIds
+        if (allowedIds == null) {
+            _companyListState.value = CompanyListUiState.Loading
+            return
+        }
+
+
+        if (allowedIds.isEmpty()) {
+            _companyListState.value = CompanyListUiState.Error(
+                "No companies are assigned to your account."
+            )
             CompanyContext.updateSelectedCompany(
                 context = getApplication(),
                 companyId = ""
+            )
+            return
+        }
+
+        val filteredCompanies = allCompanies.filter { it.id in allowedIds }
+        val missingCompanies = allowedIds
+            .filterNot { allowedId -> allCompanies.any { it.id == allowedId } }
+            .map { missingId -> CompanyOption(id = missingId, displayName = missingId) }
+        val companies = (filteredCompanies + missingCompanies).sortedBy { it.displayName }
+
+        if (companies.isEmpty()) {
+            _companyListState.value = CompanyListUiState.Error(
+                "No company records were found in your account."
+            )
+            CompanyContext.updateSelectedCompany(
+                context = getApplication(),
+                companyId = ""
+            )
+            return
+        }
+        val selected = selectedCompanyId.value
+        val selectedExists = companies.any { it.id == selected }
+        if (!selectedExists) {
+            CompanyContext.updateSelectedCompany(
+                context = getApplication(),
+                companyId = companies.first().id
             )
         }
         _companyListState.value = CompanyListUiState.Success(companies)
@@ -135,6 +208,10 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
 
     fun selectCompany(companyId: String) {
         CompanyContext.updateSelectedCompany(getApplication(), companyId)
+    }
+
+    fun clearSelectedCompany() {
+        CompanyContext.updateSelectedCompany(getApplication(), "")
     }
 
     fun saveDocumentFormats(salesOrderFormat: String, stockAdjustmentFormat: String): Result<Unit> {
@@ -158,6 +235,9 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
     }
 
     override fun onCleared() {
+        auth.removeAuthStateListener(authStateListener)
+        userAccessListener?.remove()
+        userAccessListener = null
         companiesListener?.remove()
         companiesListener = null
         super.onCleared()
@@ -165,6 +245,7 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
 
     private companion object {
         const val COMPANIES_COLLECTION = "Companies"
+        const val USERS_COLLECTION = "Users"
         val COMPANY_SUBCOLLECTION_HINTS = listOf(
             "CreditorSummary",
             "DebtorSummary",

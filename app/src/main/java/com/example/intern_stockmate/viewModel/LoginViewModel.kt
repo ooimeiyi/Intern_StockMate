@@ -63,7 +63,7 @@ class LoginViewModel(
         val password = inputPassword
         if (email.isBlank() || password.isBlank()) {
             loginError = true
-            loginErrorMessage = "Email and password are required."
+            loginErrorMessage = "Please enter email and password."
             onResult(false)
             return
         }
