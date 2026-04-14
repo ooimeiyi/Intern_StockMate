@@ -697,6 +697,7 @@ private fun SalesOrderItemRow(
         selectedLocation,
         item.itemCode,
         debtor,
+        selectedItemState?.qty,
         selectedItemState?.uom
     ) {
         val existing = selectedItemState

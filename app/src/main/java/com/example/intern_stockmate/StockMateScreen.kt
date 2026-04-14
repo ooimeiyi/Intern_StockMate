@@ -39,9 +39,7 @@ import com.example.intern_stockmate.viewModel.LoginViewModelFactory
 fun StockMateScreen() {
     val context = LocalContext.current
     val loginViewModel: LoginViewModel = viewModel(
-        factory = LoginViewModelFactory(
-            UserCredentialDatabase.getInstance(context).userCredentialDao()
-        )
+        factory = LoginViewModelFactory()
     )
     var isLoggedIn by rememberSaveable { mutableStateOf(false) }
     var showConfigFromLogin by rememberSaveable { mutableStateOf(false) }

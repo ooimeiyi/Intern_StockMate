@@ -5,41 +5,31 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
-import com.example.intern_stockmate.data.local.UserCredentialDao
-import com.example.intern_stockmate.data.local.UserCredentialEntity
-import kotlinx.coroutines.launch
+import com.google.android.gms.tasks.Task
+import com.google.firebase.auth.EmailAuthProvider
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 class LoginViewModel(
-    private val credentialDao: UserCredentialDao
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 ) : ViewModel() {
-
-    private val defaultUserId = "Admin"
-    private val defaultPassword = "Admin"
-    private val resetAdminPasswordCode = "shlsoftware123456"
-    private var userId by mutableStateOf(defaultUserId)
-    private var password by mutableStateOf(defaultPassword)
 
     var inputUserId by mutableStateOf("")
         private set
     var inputPassword by mutableStateOf("")
         private set
 
-    init {
-        viewModelScope.launch {
-            val storedCredential = credentialDao.getCredential(defaultUserId)
-            if (storedCredential == null) {
-                credentialDao.upsertCredential(
-                    UserCredentialEntity(userId = defaultUserId, password = password)
-                )
-            } else {
-                userId = storedCredential.userId
-                password = storedCredential.password
-            }
-        }
-    }
-
     var loginError by mutableStateOf(false)
+        private set
+
+    var loginErrorMessage by mutableStateOf("Incorrect Email or Password")
+        private set
+
+    var isLoggingIn by mutableStateOf(false)
         private set
 
     var isPasswordVisible by mutableStateOf(false)
@@ -68,59 +58,59 @@ class LoginViewModel(
     val isLoginEnabled: Boolean
         get() = inputUserId.isNotBlank() && inputPassword.isNotBlank()
 
-    fun attemptLogin(): Boolean {
-        return if (inputUserId == userId && inputPassword == password) {
-            loginError = false
-            true
-        } else {
+    fun attemptLogin(onResult: (Boolean) -> Unit) {
+        val email = inputUserId.trim()
+        val password = inputPassword
+        if (email.isBlank() || password.isBlank()) {
             loginError = true
-            false
+            loginErrorMessage = "Email and password are required."
+            onResult(false)
+            return
         }
-    }
 
-    suspend fun changePassword(oldPassword: String, newPassword: String): Result<Unit> {
-        if (oldPassword.isBlank() && newPassword.isBlank()) {
-            return Result.failure(IllegalArgumentException("Please enter old and new password"))
-        }
-        if (oldPassword != password) {
-            return Result.failure(IllegalArgumentException("Old password is incorrect"))
-        }
-        if (newPassword.isBlank()) {
-            return Result.failure(IllegalArgumentException("New password cannot be empty"))
-        }
-        if(oldPassword==newPassword){
-            return Result.failure(IllegalArgumentException("New password cannot be the same as old password"))
-        }
-        password = newPassword
-        credentialDao.upsertCredential(
-            UserCredentialEntity(userId = userId, password = newPassword)
-        )
-        return Result.success(Unit)
-    }
+        isLoggingIn = true
+        auth.signInWithEmailAndPassword(email, password)
+            .addOnCompleteListener { task ->
+                isLoggingIn = false
+                if (task.isSuccessful) {
+                    loginError = false
+                    loginErrorMessage = ""
+                    onResult(true)
+                } else {
+                    loginError = true
+                    loginErrorMessage = when (task.exception) {
+                        is FirebaseAuthInvalidCredentialsException -> "Incorrect email or password"
+                        is FirebaseAuthInvalidUserException -> "Email not found"
+                        else -> task.exception?.localizedMessage ?: "Incorrect email or password"
+                    }
+                    onResult(false)
+                }
+            }
 
-    suspend fun resetAdminPassword(resetCode: String): Result<Unit> {
-        if (resetCode.isBlank()) {
-            return Result.failure(IllegalArgumentException("Please enter reset password"))
-        }
-        if (resetCode != resetAdminPasswordCode) {
-            return Result.failure(IllegalArgumentException("Reset password is incorrect"))
-        }
-        password = defaultPassword
-        credentialDao.upsertCredential(
-            UserCredentialEntity(userId = defaultUserId, password = defaultPassword)
-        )
-        return Result.success(Unit)
     }
 }
 
 class LoginViewModelFactory(
-    private val credentialDao: UserCredentialDao
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return LoginViewModel(credentialDao) as T
+            return LoginViewModel(auth) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
+    }
+}
+
+private suspend fun <T> awaitTask(task: Task<T>): T = suspendCancellableCoroutine { continuation ->
+    task.addOnCompleteListener { completedTask ->
+        if (completedTask.isSuccessful) {
+            @Suppress("UNCHECKED_CAST")
+            continuation.resume(completedTask.result as T)
+        } else {
+            continuation.resumeWithException(
+                completedTask.exception ?: IllegalStateException("Firebase task failed")
+            )
+        }
     }
 }

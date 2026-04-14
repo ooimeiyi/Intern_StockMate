@@ -111,7 +111,7 @@ fun LogInScreen(
                     horizontalAlignment = Alignment.Start
                 ) {
                     Text(
-                        text = "USERNAME",
+                        text = "EMAIL",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF5E6368),
@@ -120,7 +120,7 @@ fun LogInScreen(
                     OutlinedTextField(
                         value = loginViewModel.inputUserId,
                         onValueChange = { loginViewModel.onUserIdChange(it) },
-                        placeholder = { Text("Enter username", color = Color.LightGray) },
+                        placeholder = { Text("Enter email", color = Color.LightGray) },
                         leadingIcon = { Icon(Icons.Default.Person, null, tint = Color.LightGray) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
@@ -164,8 +164,12 @@ fun LogInScreen(
                     Spacer(modifier = Modifier.height(10.dp))
 
                     if (loginViewModel.loginError) {
-                        LaunchedEffect(loginViewModel.loginError) {
-                            Toast.makeText(context, "Incorrect Username or Password", Toast.LENGTH_SHORT).show()
+                        LaunchedEffect(loginViewModel.loginError, loginViewModel.loginErrorMessage) {
+                            Toast.makeText(
+                                context,
+                                loginViewModel.loginErrorMessage,
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     }
 
@@ -173,39 +177,40 @@ fun LogInScreen(
 
                     Button(
                         onClick = {
-                            if (loginViewModel.attemptLogin()) {
-                                // NAVIGATE first
-                                onLoginSuccess()
-
-                                // Clear fields safely
-                                loginViewModel.clearFields()
+                            loginViewModel.attemptLogin { success ->
+                                if (success) {
+                                    onLoginSuccess()
+                                    loginViewModel.clearFields()
+                                }
                             }
                         },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF3636))
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF3636)),
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Login, contentDescription = null, tint = Color.White)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Login",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
+                            if (loginViewModel.isLoggingIn) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    color = Color.White,
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Icon(Icons.Default.Login, contentDescription = null, tint = Color.White)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Login",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
                         }
                     }
                 }
             }
-            Text(
-                text = "Default: Admin / Admin",
-                fontSize = 12.sp,
-                color = Color.LightGray,
-                modifier = Modifier.padding(top = 40.dp)
-            )
         }
     }
 }
