@@ -95,6 +95,7 @@ import androidx.compose.runtime.DisposableEffect
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -486,8 +487,9 @@ fun SalesOrderDetailsScreen(
                     val qty = selected?.qty.orEmpty().toDoubleOrNull() ?: 0.0
                     qty * (selected?.unitPrice ?: 0.0)
                 }
+                val roundedGrandSubtotal = roundAmountToNearestFiveSen(grandSubtotal)
                 Text(
-                    text = "Subtotal: %.2f".format(grandSubtotal),
+                    text = "Subtotal: %.2f".format(roundedGrandSubtotal),
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF2E7D32),
                     modifier = Modifier
@@ -594,6 +596,17 @@ fun SalesOrderDetailsScreen(
             }
         }
     }
+}
+
+private fun roundAmountToNearestFiveSen(amount: Double): Double {
+    val sign = if (amount < 0) -1 else 1
+    val absoluteSen = (kotlin.math.abs(amount) * 100).roundToInt()
+    val roundedAbsoluteSen = when (absoluteSen % 5) {
+        1, 2 -> absoluteSen - (absoluteSen % 5)
+        3, 4 -> absoluteSen + (5 - (absoluteSen % 5))
+        else -> absoluteSen
+    }
+    return sign * roundedAbsoluteSen / 100.0
 }
 
 @Composable
