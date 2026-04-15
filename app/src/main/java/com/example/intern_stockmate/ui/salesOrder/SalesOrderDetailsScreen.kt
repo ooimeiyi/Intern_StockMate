@@ -697,7 +697,6 @@ private fun SalesOrderItemRow(
         selectedLocation,
         item.itemCode,
         debtor,
-        selectedItemState?.qty,
         selectedItemState?.uom
     ) {
         val existing = selectedItemState
@@ -730,6 +729,10 @@ private fun SalesOrderItemRow(
             )
             unitPriceInput = if (tierPrice != null) "%.2f".format(tierPrice) else "-"
         }
+    }
+
+    LaunchedEffect(item.itemCode, selectedItemState?.qty) {
+        qtyInput = selectedItemState?.qty.orEmpty()
     }
 
     val subtotalValue = (qtyInput.toDoubleOrNull() ?: 0.0) * (unitPriceInput.toDoubleOrNull() ?: 0.0)

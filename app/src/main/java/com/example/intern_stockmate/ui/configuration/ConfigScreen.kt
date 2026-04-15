@@ -73,10 +73,6 @@ fun ConfigScreen(
     val savedSalesOrderFormat by configurationViewModel.salesOrderFormat.collectAsState()
     val savedStockAdjustmentFormat by configurationViewModel.stockAdjustmentFormat.collectAsState()
 
-    LaunchedEffect(Unit) {
-        configurationViewModel.clearSelectedCompany()
-    }
-
     var companyExpanded by remember { mutableStateOf(false) }
     var salesOrderFormat by remember(savedSalesOrderFormat) { mutableStateOf(savedSalesOrderFormat) }
     var adjustmentFormat by remember(savedStockAdjustmentFormat) { mutableStateOf(savedStockAdjustmentFormat) }
