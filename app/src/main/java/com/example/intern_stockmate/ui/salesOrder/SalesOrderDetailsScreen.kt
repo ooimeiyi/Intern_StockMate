@@ -466,7 +466,10 @@ fun SalesOrderDetailsScreen(
                     }
                 }
             }
-            items(itemsToShow) { item ->
+            items(
+                items = itemsToShow,
+                key = { it.itemCode }
+            ) { item ->
                 SalesOrderItemRow(
                     item = item,
                     selectedLocation = selectedLocation,
@@ -681,6 +684,7 @@ private fun SalesOrderItemRow(
 ) {
     var selectedUom by remember { mutableStateOf(item.uomList.firstOrNull()?.uom ?: item.uom) }
     var qtyInput by remember { mutableStateOf("") }
+    var hasManualUnitPriceOverride by remember(item.itemCode) { mutableStateOf(false) }
     var unitPriceInput by remember {
         val resolvedPrice = salesOrderViewModel.resolvePriceForDebtor(
             debtorLabel = debtor,
@@ -709,19 +713,25 @@ private fun SalesOrderItemRow(
                 uomInfo = existingUomInfo,
                 fallbackPrice = existing.unitPrice
             )
-            unitPriceInput = if (tierPrice != null) "%.2f".format(tierPrice) else "-"
-            val normalizedPrice = tierPrice ?: 0.0
-            if (kotlin.math.abs(existing.unitPrice - normalizedPrice) > 0.000001) {
-                salesOrderViewModel.updateSelectedItem(
-                    itemCode = item.itemCode,
-                    qty = qtyInput,
-                    uom = selectedUom,
-                    unitPrice = normalizedPrice
-                )
+            val debtorPrice = tierPrice ?: 0.0
+            if (!existing.isManualUnitPrice) {
+                unitPriceInput = if (tierPrice != null) "%.2f".format(tierPrice) else "-"
+                if (kotlin.math.abs(existing.unitPrice - debtorPrice) > 0.000001) {
+                    salesOrderViewModel.updateSelectedItem(
+                        itemCode = item.itemCode,
+                        qty = existing.qty,
+                        uom = existing.uom,
+                        unitPrice = debtorPrice,
+                        isManualUnitPrice = false
+                    )
+                }
+            } else {
+                unitPriceInput = "%.2f".format(existing.unitPrice)
             }
         } else {
             selectedUom = item.uomList.firstOrNull()?.uom ?: item.uom
             qtyInput = ""
+            hasManualUnitPriceOverride = false
             val tierPrice = salesOrderViewModel.resolvePriceForDebtor(
                 debtorLabel = debtor,
                 uomInfo = item.uomList.firstOrNull(),
@@ -806,12 +816,14 @@ private fun SalesOrderItemRow(
                             fallbackPrice = item.price
                         )
                         unitPriceInput = if (newPrice != null) "%.2f".format(newPrice) else "-"
+                        hasManualUnitPriceOverride = false
                         onTrackItemInSession(item.itemCode)
                         salesOrderViewModel.updateSelectedItem(
                             itemCode = item.itemCode,
                             qty = qtyInput,
                             uom = selectedUom,
-                            unitPrice = newPrice ?: 0.0
+                            unitPrice = newPrice ?: 0.0,
+                            isManualUnitPrice = false
                         )
                     }
                 )
@@ -826,7 +838,8 @@ private fun SalesOrderItemRow(
                                 itemCode = item.itemCode,
                                 qty = qtyInput,
                                 uom = selectedUom,
-                                unitPrice = unitPriceInput.toDoubleOrNull() ?: 0.0
+                                unitPrice = unitPriceInput.toDoubleOrNull() ?: 0.0,
+                                isManualUnitPrice = selectedItemState?.isManualUnitPrice ?: false
                             )
                         }
                     },
@@ -841,12 +854,14 @@ private fun SalesOrderItemRow(
                     onValueChange = { input ->
                         if (input.matches(Regex("^\\d*\\.?\\d*$"))) {
                             unitPriceInput = input
+                            hasManualUnitPriceOverride = true
                             onTrackItemInSession(item.itemCode)
                             salesOrderViewModel.updateSelectedItem(
                                 itemCode = item.itemCode,
                                 qty = qtyInput,
                                 uom = selectedUom,
-                                unitPrice = unitPriceInput.toDoubleOrNull() ?: 0.0
+                                unitPrice = unitPriceInput.toDoubleOrNull() ?: 0.0,
+                                isManualUnitPrice = true
                             )
                         }
                     },

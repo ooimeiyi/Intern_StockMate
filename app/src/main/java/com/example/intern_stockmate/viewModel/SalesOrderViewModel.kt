@@ -40,7 +40,8 @@ class SalesOrderViewModel(
         val itemCode: String,
         val qty: String,
         val uom: String,
-        val unitPrice: Double
+        val unitPrice: Double,
+        val isManualUnitPrice: Boolean = false
     )
 
     private var salesOrderDao = daoForCurrentCompany()
@@ -148,7 +149,8 @@ class SalesOrderViewModel(
                 itemCode = detail.itemCode,
                 qty = detail.qty,
                 uom = detail.uom,
-                unitPrice = detail.unitPrice
+                unitPrice = detail.unitPrice,
+                isManualUnitPrice = true
             )
         }
     }
@@ -173,7 +175,8 @@ class SalesOrderViewModel(
         itemCode: String,
         qty: String,
         uom: String,
-        unitPrice: Double
+        unitPrice: Double,
+        isManualUnitPrice: Boolean = false
     ) {
         val normalizedQty = qty.trim()
 
@@ -181,7 +184,8 @@ class SalesOrderViewModel(
             itemCode = itemCode,
             qty = normalizedQty,
             uom = uom,
-            unitPrice = unitPrice
+            unitPrice = unitPrice,
+            isManualUnitPrice = isManualUnitPrice
         )
     }
 
@@ -202,7 +206,8 @@ class SalesOrderViewModel(
             itemCode = itemCode,
             qty = normalizedQty,
             uom = currentItem?.uom ?: defaultUom,
-            unitPrice = currentItem?.unitPrice ?: defaultUnitPrice
+            unitPrice = currentItem?.unitPrice ?: defaultUnitPrice,
+            isManualUnitPrice = currentItem?.isManualUnitPrice ?: false
         )
     }
 
