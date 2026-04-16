@@ -7,15 +7,22 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.EmailAuthProvider
+import androidx.lifecycle.viewModelScope
+import com.example.intern_stockmate.data.local.UserCredentialDao
+import com.example.intern_stockmate.data.local.UserCredentialEntity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 
 class LoginViewModel(
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
+    private val userCredentialDao: UserCredentialDao? = null
 ) : ViewModel() {
 
     var inputUserId by mutableStateOf("")
@@ -35,6 +42,19 @@ class LoginViewModel(
     var isPasswordVisible by mutableStateOf(false)
         private set
 
+    init {
+        loadSavedCredential()
+    }
+
+    private fun loadSavedCredential() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val savedCredential = userCredentialDao?.getLatestCredential() ?: return@launch
+            withContext(Dispatchers.Main) {
+                inputUserId = savedCredential.userId
+                inputPassword = savedCredential.password
+            }
+        }
+    }
     fun onUserIdChange(newValue: String) {
         inputUserId = newValue
         loginError = false
@@ -75,6 +95,14 @@ class LoginViewModel(
                 if (task.isSuccessful) {
                     loginError = false
                     loginErrorMessage = ""
+                    viewModelScope.launch(Dispatchers.IO) {
+                        userCredentialDao?.upsertCredential(
+                            UserCredentialEntity(
+                                userId = email,
+                                password = password
+                            )
+                        )
+                    }
                     onResult(true)
                 } else {
                     loginError = true
@@ -91,12 +119,13 @@ class LoginViewModel(
 }
 
 class LoginViewModelFactory(
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
+    private val userCredentialDao: UserCredentialDao? = null
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return LoginViewModel(auth) as T
+            return LoginViewModel(auth, userCredentialDao) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }

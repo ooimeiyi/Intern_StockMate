@@ -164,7 +164,6 @@ fun LogInScreen(
                             loginViewModel.attemptLogin { success ->
                                 if (success) {
                                     onLoginSuccess()
-                                    loginViewModel.clearFields()
                                 }
                             }
                         },
