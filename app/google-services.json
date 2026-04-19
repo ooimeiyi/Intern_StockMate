@@ -1,33 +1,13 @@
 {
   "project_info": {
-    "project_number": "817574968372",
-    "firebase_url": "https://shlbsp-api-default-rtdb.asia-southeast1.firebasedatabase.app",
-    "project_id": "shlbsp-api",
-    "storage_bucket": "shlbsp-api.firebasestorage.app"
+    "project_number": "935803256603",
+    "project_id": "shl-bsp-api",
+    "storage_bucket": "shl-bsp-api.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:817574968372:android:e067a8b30359e76704de61",
-        "android_client_info": {
-          "package_name": "com.example.app_stock_ova"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyCFmReNtM_JvN0QnssGoTG4M-48C9PFMlQ"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:817574968372:android:7259acb2bd39e61d04de61",
+        "mobilesdk_app_id": "1:935803256603:android:ad4c3f326e462ac3375dbe",
         "android_client_info": {
           "package_name": "com.example.intern_stockmate"
         }
@@ -35,26 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCFmReNtM_JvN0QnssGoTG4M-48C9PFMlQ"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:817574968372:android:f53504a74691a09204de61",
-        "android_client_info": {
-          "package_name": "com.shl.stocktestova"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyCFmReNtM_JvN0QnssGoTG4M-48C9PFMlQ"
+          "current_key": "AIzaSyCThN-sR3hTc9cGOoi8XFIJVogsLeL7pJk"
         }
       ],
       "services": {

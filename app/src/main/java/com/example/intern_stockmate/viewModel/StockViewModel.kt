@@ -102,14 +102,14 @@ class StockViewModel(
             .addOnSuccessListener { metadataDocument ->
                 if (!metadataDocument.exists()) {
                     clearStockData()
-                    _stockState.value = StockUiState.Error("Stock metadata was not found.")
+                    _stockState.value = StockUiState.Error("Stock list was not found.")
                     return@addOnSuccessListener
                 }
 
                 val storagePath = metadataDocument.getString("storagePath").orEmpty().trim()
                 if (storagePath.isBlank()) {
                     clearStockData()
-                    _stockState.value = StockUiState.Error("Stock metadata is missing storagePath.")
+                    _stockState.value = StockUiState.Error("Stock list is missing storagePath.")
                     return@addOnSuccessListener
                 }
 
@@ -147,10 +147,10 @@ class StockViewModel(
                     }
             }
             .addOnFailureListener { error ->
-                Log.e(TAG, "Failed to load stock metadata", error)
+                Log.e(TAG, "Failed to load stock list", error)
                 clearStockData()
                 _stockState.value = StockUiState.Error(
-                    error.message ?: "Failed to load stock metadata from Firestore."
+                    error.message ?: "Failed to load stock list from Firestore."
                 )
             }
     }
