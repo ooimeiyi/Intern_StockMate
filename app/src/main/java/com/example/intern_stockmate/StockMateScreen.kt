@@ -32,8 +32,15 @@ import com.example.intern_stockmate.ui.loginScreen.LogInScreen
 import com.example.intern_stockmate.data.CompanyContext
 import com.example.intern_stockmate.data.DocumentNumberFormatStore
 import com.example.intern_stockmate.data.local.UserCredentialDatabase
+import com.example.intern_stockmate.ui.accountBook.AccountBookScreen
 import com.example.intern_stockmate.viewModel.LoginViewModel
 import com.example.intern_stockmate.viewModel.LoginViewModelFactory
+
+private enum class AuthStage {
+    LOGIN,
+    ACCOUNT_BOOK,
+    DASHBOARD,
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,7 +53,7 @@ fun StockMateScreen() {
     val loginViewModel: LoginViewModel = viewModel(
         factory = LoginViewModelFactory(userCredentialDao = userCredentialDao)
     )
-    var isLoggedIn by rememberSaveable { mutableStateOf(false) }
+    var authStage by rememberSaveable { mutableStateOf(AuthStage.LOGIN.name) }
     var showConfigFromLogin by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
@@ -60,20 +67,27 @@ fun StockMateScreen() {
         color = Color.White
     ) {
         Crossfade(
-            targetState = isLoggedIn,
+            targetState = authStage,
             animationSpec = tween(durationMillis = 220),
             label = "auth_navigation"
-        ) { loggedIn ->
-            if (loggedIn) {
+        ) { stage ->
+            if (stage == AuthStage.DASHBOARD.name) {
                 MainScreenWithMenu(
                     loginViewModel = loginViewModel,
                     onLogout = {
-                        isLoggedIn = false
+                        authStage = AuthStage.LOGIN.name
                         showConfigFromLogin = false
                     }
                 )
             } else {
-                if (showConfigFromLogin) {
+                if (stage == AuthStage.ACCOUNT_BOOK.name) {
+                    AccountBookScreen(
+                        onConfirm = {
+                            authStage = AuthStage.DASHBOARD.name
+                            showConfigFromLogin = false
+                        }
+                    )
+                } else if (showConfigFromLogin) {
                     Scaffold(
                         topBar = {
                             TopAppBar(
@@ -104,7 +118,7 @@ fun StockMateScreen() {
                     LogInScreen(
                         loginViewModel = loginViewModel,
                         onLoginSuccess = {
-                            isLoggedIn = true
+                            authStage = AuthStage.ACCOUNT_BOOK.name
                             showConfigFromLogin = false
                         },
                     )

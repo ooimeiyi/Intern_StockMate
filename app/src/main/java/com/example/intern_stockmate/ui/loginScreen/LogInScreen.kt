@@ -75,7 +75,7 @@ fun LogInScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Stock Mate",
+                text = "SALES MATE",
                 fontSize = 35.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color(0xFFEF3636)
