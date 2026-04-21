@@ -189,19 +189,6 @@ fun AccountBookItem(
                 fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Expiry: ${book.expiryDateLabel()}",
-                fontSize = 14.sp,
-                color = Color.Gray
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = if (book.isActive) "Active" else "Inactive",
-                fontSize = 13.sp,
-                color = if (book.isActive) Color(0xFF2E7D32) else Color(0xFFC62828),
-                fontWeight = FontWeight.Medium
-            )
         }
     }
 }
