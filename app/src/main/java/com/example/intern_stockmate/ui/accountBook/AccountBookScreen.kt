@@ -1,5 +1,6 @@
 package com.example.intern_stockmate.ui.accountBook
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -31,7 +32,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.intern_stockmate.data.AccountBookContext
 import com.example.intern_stockmate.model.AccountBook
 import com.example.intern_stockmate.viewModel.AccountBookUiState
 import com.example.intern_stockmate.viewModel.AccountBookViewModel
@@ -43,7 +46,11 @@ fun AccountBookScreen(
     accountBookViewModel: AccountBookViewModel = viewModel()
 ) {
     val uiState by accountBookViewModel.uiState.collectAsState()
-    var selectedBookId by rememberSaveable { mutableStateOf<String?>(null) }
+    val savedAccountBookId by AccountBookContext.selectedAccountBookId.collectAsState()
+    val context = LocalContext.current
+    var selectedBookId by rememberSaveable(savedAccountBookId) {
+        mutableStateOf(savedAccountBookId.ifBlank { null })
+    }
 
     Column(
         modifier = Modifier
@@ -126,7 +133,17 @@ fun AccountBookScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
-            onClick = onConfirm,
+            onClick = {
+                val selectedId = selectedBookId ?: return@Button
+                accountBookViewModel.saveSelectedAccountBook(
+                    context = context,
+                    accountBookId = selectedId,
+                    onSuccess = onConfirm,
+                    onError = { message ->
+                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    }
+                )
+            },
             enabled = selectedBookId != null,
             modifier = Modifier
                 .fillMaxWidth()

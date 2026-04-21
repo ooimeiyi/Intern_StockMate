@@ -15,6 +15,7 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -22,7 +23,8 @@ import kotlinx.coroutines.withContext
 
 class LoginViewModel(
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
-    private val userCredentialDao: UserCredentialDao? = null
+    private val userCredentialDao: UserCredentialDao? = null,
+    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) : ViewModel() {
 
     var inputUserId by mutableStateOf("")
@@ -116,16 +118,46 @@ class LoginViewModel(
             }
 
     }
+
+    fun fetchSavedAccountBook(
+        onResult: (String?) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val email = auth.currentUser?.email?.trim().orEmpty()
+        if (email.isBlank()) {
+            onResult(null)
+            return
+        }
+
+        firestore.collection(USERS_COLLECTION)
+            .document(email)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val savedAccountBook = snapshot.getString(ACCOUNT_BOOK_FIELD)
+                    ?.trim()
+                    ?.takeIf { it.isNotBlank() }
+                onResult(savedAccountBook)
+            }
+            .addOnFailureListener { error ->
+                onError(error.message ?: "Unable to check saved account book")
+            }
+    }
+
+    private companion object {
+        const val USERS_COLLECTION = "Users"
+        const val ACCOUNT_BOOK_FIELD = "AccountBook"
+    }
 }
 
 class LoginViewModelFactory(
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
-    private val userCredentialDao: UserCredentialDao? = null
+    private val userCredentialDao: UserCredentialDao? = null,
+    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return LoginViewModel(auth, userCredentialDao) as T
+            return LoginViewModel(auth, userCredentialDao, firestore) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }

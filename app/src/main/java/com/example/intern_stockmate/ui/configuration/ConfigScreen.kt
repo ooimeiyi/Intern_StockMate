@@ -21,7 +21,9 @@ import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.platform.LocalContext
@@ -52,6 +54,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.intern_stockmate.data.AccountBookContext
 import com.example.intern_stockmate.data.DocumentNumberFormatStore
 import com.example.intern_stockmate.viewModel.LoginViewModel
 import androidx.compose.ui.platform.LocalFocusManager
@@ -70,6 +73,7 @@ fun ConfigScreen(
     val configurationViewModel: ConfigurationViewModel = viewModel()
     val companyListState by configurationViewModel.companyListState.collectAsState()
     val selectedCompanyId by configurationViewModel.selectedCompanyId.collectAsState()
+    val selectedAccountBookId by AccountBookContext.selectedAccountBookId.collectAsState()
     val savedSalesOrderFormat by configurationViewModel.salesOrderFormat.collectAsState()
     val savedStockAdjustmentFormat by configurationViewModel.stockAdjustmentFormat.collectAsState()
 
@@ -169,6 +173,16 @@ fun ConfigScreen(
                 }
                 else -> Unit
             }
+        }
+
+        ManagementCard(title = "Account Book", icon = Icons.Default.MenuBook) {
+            Text(
+                text = if (selectedAccountBookId.isBlank()) "No account book selected"
+                else selectedAccountBookId,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.Black
+            )
         }
 
         ManagementCard(title = "Document Number Format", icon = Icons.Default.Settings) {

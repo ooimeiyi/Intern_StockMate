@@ -31,6 +31,7 @@ import com.example.intern_stockmate.ui.configuration.ConfigScreen
 import com.example.intern_stockmate.ui.loginScreen.LogInScreen
 import com.example.intern_stockmate.data.CompanyContext
 import com.example.intern_stockmate.data.DocumentNumberFormatStore
+import com.example.intern_stockmate.data.AccountBookContext
 import com.example.intern_stockmate.data.local.UserCredentialDatabase
 import com.example.intern_stockmate.ui.accountBook.AccountBookScreen
 import com.example.intern_stockmate.viewModel.LoginViewModel
@@ -59,6 +60,7 @@ fun StockMateScreen() {
 
     LaunchedEffect(Unit) {
         CompanyContext.initialize(context)
+        AccountBookContext.initialize(context)
         DocumentNumberFormatStore.initialize(context)
     }
 
@@ -118,8 +120,21 @@ fun StockMateScreen() {
                     LogInScreen(
                         loginViewModel = loginViewModel,
                         onLoginSuccess = {
-                            authStage = AuthStage.ACCOUNT_BOOK.name
-                            showConfigFromLogin = false
+                            loginViewModel.fetchSavedAccountBook(
+                                onResult = { savedAccountBook ->
+                                    if (savedAccountBook.isNullOrBlank()) {
+                                        authStage = AuthStage.ACCOUNT_BOOK.name
+                                    } else {
+                                        AccountBookContext.updateSelectedAccountBook(context, savedAccountBook)
+                                        authStage = AuthStage.DASHBOARD.name
+                                    }
+                                    showConfigFromLogin = false
+                                },
+                                onError = {
+                                    authStage = AuthStage.ACCOUNT_BOOK.name
+                                    showConfigFromLogin = false
+                                }
+                            )
                         },
                     )
                 }

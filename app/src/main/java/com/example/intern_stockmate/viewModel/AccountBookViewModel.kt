@@ -1,9 +1,13 @@
 package com.example.intern_stockmate.viewModel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
+import com.example.intern_stockmate.data.AccountBookContext
 import com.example.intern_stockmate.model.AccountBook
 import com.google.firebase.Timestamp
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,7 +24,8 @@ sealed interface AccountBookUiState {
 }
 
 class AccountBookViewModel(
-    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance(),
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<AccountBookUiState>(AccountBookUiState.Loading)
@@ -52,6 +57,42 @@ class AccountBookViewModel(
                     error.message ?: "Unable to load account books"
                 )
             }
+    }
+
+    fun saveSelectedAccountBook(
+        context: Context,
+        accountBookId: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val normalizedId = accountBookId.trim()
+        if (normalizedId.isBlank()) {
+            onError("Please select an account book")
+            return
+        }
+
+        val email = auth.currentUser?.email?.trim().orEmpty()
+        if (email.isBlank()) {
+            onError("User email not found. Please login again.")
+            return
+        }
+
+        val payload = mapOf("AccountBook" to normalizedId)
+
+        firestore.collection(USERS_COLLECTION)
+            .document(email)
+            .set(payload, SetOptions.merge())
+            .addOnSuccessListener {
+                AccountBookContext.updateSelectedAccountBook(context, normalizedId)
+                onSuccess()
+            }
+            .addOnFailureListener { error ->
+                onError(error.message ?: "Unable to save account book")
+            }
+    }
+
+    private companion object {
+        const val USERS_COLLECTION = "Users"
     }
 }
 
