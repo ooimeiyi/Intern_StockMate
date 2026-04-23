@@ -205,7 +205,7 @@ fun ConfigScreen(
 
         ManagementCard(title = "Stock Access Rights", icon = Icons.Default.Settings) {
             Text(
-                text = "When a user logs in with the 'stock profile', they only have access to Stock List, Stock Take, and Sales Order by default. You can enable additional modules for them below: ",
+                text = "When a user logs in with the 'stock' profile, they only have access to Stock List, Stock Take, and Sales Order by default. You can enable additional modules for them below: ",
                 fontSize = 14.sp,
                 color = Color.Gray,
                 lineHeight = 20.sp,
