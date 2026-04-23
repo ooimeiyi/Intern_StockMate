@@ -289,9 +289,9 @@ fun MainScreenWithMenu(
                     }
                 }
 
-                if (allowedScreens.contains(HamburgerScreen.Members.route)) {
-                    composable(HamburgerScreen.Members.route) {
-                        MemberInfoScreenContainer()
+                if (allowedScreens.contains(HamburgerScreen.Debtor.route)) {
+                    composable(HamburgerScreen.Debtor.route) {
+                        DebtorInfoScreenContainer()
                     }
                 }
 

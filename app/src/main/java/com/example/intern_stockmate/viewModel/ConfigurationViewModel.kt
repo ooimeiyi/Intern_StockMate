@@ -213,10 +213,6 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
         CompanyContext.updateSelectedCompany(getApplication(), companyId)
     }
 
-    fun clearSelectedCompany() {
-        CompanyContext.updateSelectedCompany(getApplication(), "")
-    }
-
     fun saveDocumentFormats(salesOrderFormat: String, stockAdjustmentFormat: String): Result<Unit> {
         val normalizedSo = salesOrderFormat.trim()
         val normalizedSt = stockAdjustmentFormat.trim()
@@ -251,7 +247,7 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
 
         if (normalizedAdmin == normalizedStock) {
             return Result.failure(
-                IllegalArgumentException("Admin password cannot be the same as Stock user password")
+                IllegalArgumentException("Admin password and Stock User password cannot be same")
             )
         }
 
