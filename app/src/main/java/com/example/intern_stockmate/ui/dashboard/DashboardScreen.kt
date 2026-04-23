@@ -183,12 +183,12 @@ fun DashboardScreen(
             }
         }
 
-        if (!isStockOnly || canAccess(HamburgerScreen.Contact)) {
+        if (!isStockOnly || canAccess(HamburgerScreen.Config) || canAccess(HamburgerScreen.Contact)) {
             item { SectionHeader("Configuration and Contact") }
             item {
                 Row(Modifier.padding(horizontal = 8.dp)) {
                     Box(Modifier.weight(1f)) {
-                        if (!isStockOnly) {
+                        if (canAccess(HamburgerScreen.Config)) {
                             DashboardCard("Configuration", Icons.Default.Settings) { onNavigate(HamburgerScreen.Config) }
                         }
                     }

@@ -205,7 +205,7 @@ fun ConfigScreen(
 
         ManagementCard(title = "Stock Access Rights", icon = Icons.Default.Settings) {
             Text(
-                text = "Default access for stock users: Stock List, Sales Order, and Stock Adjustment. Enable extra screens below.",
+                text = "Default access for stock staff: Stock List, Sales Order, and Stock Adjustment. Enable extra screens below.",
                 fontSize = 14.sp,
                 color = Color.Gray,
                 lineHeight = 20.sp,

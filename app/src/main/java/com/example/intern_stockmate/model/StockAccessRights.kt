@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.BusinessCenter
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -89,6 +90,13 @@ object StockAccessRights {
             title = "Creditor Info",
             subtitle = "Allow stock staff to view creditor information.",
             icon = Icons.Default.CreditCard
+        ),
+        StockAccessRightOption(
+            route = HamburgerScreen.Config.route,
+            remoteKey = "Configuration",
+            title = "Configuration",
+            subtitle = "Allow stock staff to view the configuration screen.",
+            icon = Icons.Default.Settings
         ),
         StockAccessRightOption(
             route = HamburgerScreen.Contact.route,
