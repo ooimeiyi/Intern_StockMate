@@ -34,6 +34,7 @@ import com.example.intern_stockmate.ui.loginScreen.LogInScreen
 import com.example.intern_stockmate.data.CompanyContext
 import com.example.intern_stockmate.data.DocumentNumberFormatStore
 import com.example.intern_stockmate.data.AccountBookContext
+import com.example.intern_stockmate.data.AccessPasswordStore
 import com.example.intern_stockmate.data.local.UserCredentialDatabase
 import com.example.intern_stockmate.ui.accountBook.AccountBookScreen
 import com.example.intern_stockmate.viewModel.LoginViewModel
@@ -66,6 +67,7 @@ fun StockMateScreen() {
         CompanyContext.initialize(context)
         AccountBookContext.initialize(context)
         DocumentNumberFormatStore.initialize(context)
+        AccessPasswordStore.initialize(context)
     }
 
     Surface(
@@ -91,8 +93,9 @@ fun StockMateScreen() {
                 if (stage == AuthStage.ACCESS.name) {
                     AccessScreen(
                         loginViewModel = loginViewModel,
-                        onSwitchAccountBook = {
-                            authStage = AuthStage.ACCOUNT_BOOK.name
+                        onSwitchToLogin = {
+                            authStage = AuthStage.LOGIN.name
+                            showConfigFromLogin = false
                         },
                         onAccessGranted = { selectedRole ->
                             accessRole = selectedRole.name

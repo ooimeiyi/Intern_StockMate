@@ -1,6 +1,7 @@
 package com.example.intern_stockmate.ui.configuration
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -21,11 +22,16 @@ import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -37,6 +43,7 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -52,12 +59,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.intern_stockmate.data.AccountBookContext
 import com.example.intern_stockmate.data.DocumentNumberFormatStore
 import com.example.intern_stockmate.viewModel.LoginViewModel
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.intern_stockmate.viewModel.CompanyListUiState
 import com.example.intern_stockmate.viewModel.ConfigurationViewModel
@@ -80,6 +90,10 @@ fun ConfigScreen(
     var companyExpanded by remember { mutableStateOf(false) }
     var salesOrderFormat by remember(savedSalesOrderFormat) { mutableStateOf(savedSalesOrderFormat) }
     var adjustmentFormat by remember(savedStockAdjustmentFormat) { mutableStateOf(savedStockAdjustmentFormat) }
+    val savedAdminPassword by configurationViewModel.adminPassword.collectAsState()
+    val savedStockPassword by configurationViewModel.stockPassword.collectAsState()
+    var adminPassword by remember(savedAdminPassword) { mutableStateOf(savedAdminPassword) }
+    var stockPassword by remember(savedStockPassword) { mutableStateOf(savedStockPassword) }
 
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
@@ -183,6 +197,63 @@ fun ConfigScreen(
                 fontWeight = FontWeight.Medium,
                 color = Color.Black
             )
+        }
+
+        ManagementCard(title = "Login Passwords", icon = Icons.Outlined.PersonOutline) {
+            val darkNavy = Color(0xFF101828)
+            Text(
+                text = "Update the passwords required to access the Admin and Stock profiles.",
+                fontSize = 14.sp,
+                color = Color.Gray,
+                modifier = Modifier.padding(bottom = 24.dp)
+            )
+
+            PasswordInputRow(
+                label = "Admin Password",
+                value = adminPassword,
+                onValueChange = { adminPassword = it }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            PasswordInputRow(
+                label = "Stock User Password",
+                value = stockPassword,
+                onValueChange = { stockPassword = it }
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Button(
+                onClick = {
+                    val result = configurationViewModel.saveAccessPasswords(
+                        adminPassword = adminPassword,
+                        stockPassword = stockPassword
+                    )
+
+                    if (result.isSuccess) {
+                        Toast.makeText(context, "Passwords Saved", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(
+                            context,
+                            result.exceptionOrNull()?.message ?: "Unable to save passwords",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF3636))
+            ) {
+                Text(
+                    text = "Save Passwords",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
         }
 
         ManagementCard(title = "Document Number Format", icon = Icons.Default.Settings) {
@@ -338,5 +409,63 @@ private fun ManagementCard(
             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), thickness = 0.5.dp)
             content()
         }
+    }
+}
+
+@Composable
+private fun PasswordInputRow(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit
+) {
+    var visible by remember { mutableStateOf(false) }
+
+    val textFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = Color.Black,
+        unfocusedTextColor = Color.Black,
+        cursorColor = Color.Black
+    )
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+
+        Text(
+            text = label,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            placeholder = {
+                Text("Enter password", color = Color.LightGray)
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = null,
+                    tint = Color.LightGray
+                )
+            },
+            trailingIcon = {
+                IconButton(onClick = { visible = !visible }) {
+                    Icon(
+                        imageVector = if (visible) Icons.Default.Visibility
+                        else Icons.Default.VisibilityOff,
+                        contentDescription = null,
+                        tint = Color.LightGray
+                    )
+                }
+            },
+            visualTransformation = if (visible) VisualTransformation.None
+            else PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = textFieldColors,
+            singleLine = true
+        )
     }
 }

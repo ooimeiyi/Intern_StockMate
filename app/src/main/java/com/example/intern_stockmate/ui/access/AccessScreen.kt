@@ -33,6 +33,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,18 +49,21 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.intern_stockmate.data.AccessPasswordStore
 import com.example.intern_stockmate.model.AccessRole
 import com.example.intern_stockmate.viewModel.LoginViewModel
 
 @Composable
 fun AccessScreen(
-    onSwitchAccountBook: () -> Unit,
+    onSwitchToLogin: () -> Unit,
     onAccessGranted: (AccessRole) -> Unit,
     loginViewModel: LoginViewModel,
 
     ) {
     var password by rememberSaveable { mutableStateOf("") }
     var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
+    val adminPassword by AccessPasswordStore.adminPassword.collectAsState()
+    val stockPassword by AccessPasswordStore.stockPassword.collectAsState()
 
     val primaryRed = Color(0xFFE21111)
 
@@ -100,12 +104,12 @@ fun AccessScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable(onClick = onSwitchAccountBook),
+                        .clickable(onClick = onSwitchToLogin),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Switch account book",
+                        contentDescription = "Switch to Login Screen",
                         modifier = Modifier.size(16.dp),
                         tint = Color.Gray
                     )
@@ -153,10 +157,10 @@ fun AccessScreen(
 
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        text = "Password",
-                        fontSize = 14.sp,
-                        color = Color.Black,
+                        text = "PASSWORD",
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
+                        color = Color(0xFF5E6368),
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     OutlinedTextField(
@@ -199,9 +203,9 @@ fun AccessScreen(
 
                 Button(
                     onClick = {
-                        when (password.trim().lowercase()) {
-                            "admin" -> onAccessGranted(AccessRole.ADMIN)
-                            "stock" -> onAccessGranted(AccessRole.STOCK)
+                        when (password.trim()) {
+                            adminPassword -> onAccessGranted(AccessRole.ADMIN)
+                            stockPassword -> onAccessGranted(AccessRole.STOCK)
                             else -> errorMessage = "Invalid password."
                         }
                     },
@@ -235,6 +239,7 @@ fun AccessScreen(
                             Text("Admin: ", fontSize = 13.sp, color = Color.Black, fontWeight = FontWeight.Bold)
                             Text(
                                 "admin",
+                                //adminPassword,
                                 color = Color.DarkGray,
                                 fontSize = 13.sp,
                             )
@@ -243,6 +248,7 @@ fun AccessScreen(
                             Text("Stock User: ", fontSize = 13.sp, color = Color.Black, fontWeight = FontWeight.Bold)
                             Text(
                                 "stock",
+                                //stockPassword,
                                 color = Color.DarkGray,
                                 fontSize = 13.sp,
                             )

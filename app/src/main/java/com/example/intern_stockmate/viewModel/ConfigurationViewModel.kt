@@ -2,6 +2,7 @@ package com.example.intern_stockmate.viewModel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
+import com.example.intern_stockmate.data.AccessPasswordStore
 import com.example.intern_stockmate.data.CompanyContext
 import com.example.intern_stockmate.data.DocumentNumberFormatStore
 import com.google.android.gms.tasks.Tasks
@@ -35,6 +36,8 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
 
     val salesOrderFormat: StateFlow<String> = DocumentNumberFormatStore.salesOrderFormat
     val stockAdjustmentFormat: StateFlow<String> = DocumentNumberFormatStore.stockAdjustmentFormat
+    val adminPassword: StateFlow<String> = AccessPasswordStore.adminPassword
+    val stockPassword: StateFlow<String> = AccessPasswordStore.stockPassword
 
     private var companiesListener: ListenerRegistration? = null
     private var userAccessListener: ListenerRegistration? = null
@@ -230,6 +233,32 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
             context = getApplication(),
             salesOrderFormat = normalizedSo,
             stockAdjustmentFormat = normalizedSt
+        )
+        return Result.success(Unit)
+    }
+
+    fun saveAccessPasswords(adminPassword: String, stockPassword: String): Result<Unit> {
+        val normalizedAdmin = adminPassword.trim()
+        val normalizedStock = stockPassword.trim()
+
+        if (normalizedAdmin.isBlank()) {
+            return Result.failure(IllegalArgumentException("Admin password cannot be empty"))
+        }
+
+        if (normalizedStock.isBlank()) {
+            return Result.failure(IllegalArgumentException("Stock password cannot be empty"))
+        }
+
+        if (normalizedAdmin == normalizedStock) {
+            return Result.failure(
+                IllegalArgumentException("Admin password cannot be the same as Stock user password")
+            )
+        }
+
+        AccessPasswordStore.updatePasswords(
+            context = getApplication(),
+            adminPassword = normalizedAdmin,
+            stockPassword = normalizedStock
         )
         return Result.success(Unit)
     }
