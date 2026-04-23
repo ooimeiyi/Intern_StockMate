@@ -17,13 +17,17 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.intern_stockmate.model.AccessRole
 import com.example.intern_stockmate.model.HamburgerScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     onNavigate: (HamburgerScreen) -> Unit,
+    accessRole: AccessRole,
 ) {
+    val isStockOnly = accessRole == AccessRole.STOCK
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -41,112 +45,116 @@ fun DashboardScreen(
                 Box(Modifier.weight(1f)) {
                     DashboardCard("Stock Take", Icons.Default.SyncAlt) {
                         onNavigate(HamburgerScreen.StockTake)
-
                     }
                 }
             }
 
-            Row(Modifier.padding(horizontal = 8.dp)) {
-                Box(Modifier.weight(1f)) {
-                    DashboardCard("Sales Order", Icons.Default.ShoppingCart) {
-                        onNavigate(HamburgerScreen.SalesOrder)
+            if (!isStockOnly) {
+                Row(Modifier.padding(horizontal = 8.dp)) {
+                    Box(Modifier.weight(1f)) {
+                        DashboardCard("Sales Order", Icons.Default.ShoppingCart) {
+                            onNavigate(HamburgerScreen.SalesOrder)
+                        }
                     }
+                    Spacer(Modifier.weight(1f))
                 }
-                Spacer(Modifier.weight(1f))
-            }
-        }
-
-        item { SectionHeader("Sales Report") }
-
-        item {
-            Row(Modifier.padding(horizontal = 8.dp)) {
-                Box(Modifier.weight(1f)) {
-                    DashboardCard("Sales Overview", Icons.Default.PieChart) {
-                        onNavigate(HamburgerScreen.SalesOverview)
-                    }
-                }
-                Box(Modifier.weight(1f)) {
-                    DashboardCard("Hourly Sales", Icons.Default.Schedule) {
-                        onNavigate(HamburgerScreen.HourlySales)
-                    }
-                }
-            }
-
-            Row(Modifier.padding(horizontal = 8.dp)) {
-                Box(Modifier.weight(1f)) {
-                    DashboardCard("Daily Sales", Icons.Default.Today) {
-                        onNavigate(HamburgerScreen.DailySales)
-                    }
-                }
-                Box(Modifier.weight(1f)) {
-                    DashboardCard("Monthly Sales", Icons.Default.DateRange) {
-                        onNavigate(HamburgerScreen.MonthlySales)
-                    }
-                }
-            }
-
-            Row(Modifier.padding(horizontal = 8.dp)) {
-                Box(Modifier.weight(1f)) {
-                    DashboardCard("Sales Rank", Icons.Default.TrendingUp) {
-                        onNavigate(HamburgerScreen.Rank)
-                    }
-                }
-                Spacer(Modifier.weight(1f))
-            }
-
-        }
-        item { SectionHeader("Item Info") }
-
-        item{
-            Row(Modifier.padding(horizontal = 8.dp)) {
-                Box(Modifier.weight(1f)) {
-                    DashboardCard("Item Info", Icons.Default.Info) {
-                        onNavigate(HamburgerScreen.Items)
-                    }
-                }
-                Spacer(Modifier.weight(1f))
-
             }
         }
 
-        item { SectionHeader("CRM & Account") }
+        if (!isStockOnly) {
+            item { SectionHeader("Sales Report") }
 
-        item {
-            Row(Modifier.padding(horizontal = 8.dp)) {
-                Box(Modifier.weight(1f)) {
-                    DashboardCard("Member Info", Icons.Default.AccountCircle) {
-                        onNavigate(HamburgerScreen.Members)
+            item {
+                Row(Modifier.padding(horizontal = 8.dp)) {
+                    Box(Modifier.weight(1f)) {
+                        DashboardCard("Sales Overview", Icons.Default.PieChart) {
+                            onNavigate(HamburgerScreen.SalesOverview)
+                        }
+                    }
+                    Box(Modifier.weight(1f)) {
+                        DashboardCard("Hourly Sales", Icons.Default.Schedule) {
+                            onNavigate(HamburgerScreen.HourlySales)
+                        }
                     }
                 }
-                Box(Modifier.weight(1f)) {
-                    DashboardCard("Debtor Info", Icons.Default.BusinessCenter) {
-                        onNavigate(HamburgerScreen.Debtor)
+
+
+                Row(Modifier.padding(horizontal = 8.dp)) {
+                    Box(Modifier.weight(1f)) {
+                        DashboardCard("Daily Sales", Icons.Default.Today) {
+                            onNavigate(HamburgerScreen.DailySales)
+                        }
                     }
+
+                    Box(Modifier.weight(1f)) {
+                        DashboardCard("Monthly Sales", Icons.Default.DateRange) {
+                            onNavigate(HamburgerScreen.MonthlySales)
+                        }
+                    }
+                }
+
+
+                Row(Modifier.padding(horizontal = 8.dp)) {
+                    Box(Modifier.weight(1f)) {
+                        DashboardCard("Sales Rank", Icons.Default.TrendingUp) {
+                            onNavigate(HamburgerScreen.Rank)
+                        }
+                    }
+                    Spacer(Modifier.weight(1f))
                 }
             }
+            item { SectionHeader("Item Info") }
 
-            Row(Modifier.padding(horizontal = 8.dp)) {
-                Box(Modifier.weight(1f)) {
-                    DashboardCard("Creditor Info", Icons.Default.CreditCard) {
-                        onNavigate(HamburgerScreen.Creditor)
+
+            item {
+                Row(Modifier.padding(horizontal = 8.dp)) {
+                    Box(Modifier.weight(1f)) {
+                        DashboardCard("Item Info", Icons.Default.Info) {
+                            onNavigate(HamburgerScreen.Items)
+                        }
                     }
+                    Spacer(Modifier.weight(1f))
                 }
-                Spacer(Modifier.weight(1f))
             }
-        }
+            item { SectionHeader("CRM & Account") }
 
-        item { SectionHeader("Configuration and Contact") }
-
-        item {
-            Row(Modifier.padding(horizontal = 8.dp)) {
-                Box(Modifier.weight(1f)) {
-                    DashboardCard("Configuration", Icons.Default.Settings) {
-                        onNavigate(HamburgerScreen.Config)
+            item {
+                Row(Modifier.padding(horizontal = 8.dp)) {
+                    Box(Modifier.weight(1f)) {
+                        DashboardCard("Member Info", Icons.Default.AccountCircle) {
+                            onNavigate(HamburgerScreen.Members)
+                        }
+                    }
+                    Box(Modifier.weight(1f)) {
+                        DashboardCard("Debtor Info", Icons.Default.BusinessCenter) {
+                            onNavigate(HamburgerScreen.Debtor)
+                        }
                     }
                 }
-                Box(Modifier.weight(1f)) {
-                    DashboardCard("Contact Us", Icons.Default.Phone) {
-                        onNavigate(HamburgerScreen.Contact)
+
+
+                Row(Modifier.padding(horizontal = 8.dp)) {
+                    Box(Modifier.weight(1f)) {
+                        DashboardCard("Creditor Info", Icons.Default.CreditCard) {
+                            onNavigate(HamburgerScreen.Creditor)
+                        }
+                    }
+                    Spacer(Modifier.weight(1f))
+                }
+            }
+            item { SectionHeader("Configuration and Contact") }
+
+            item {
+                Row(Modifier.padding(horizontal = 8.dp)) {
+                    Box(Modifier.weight(1f)) {
+                        DashboardCard("Configuration", Icons.Default.Settings) {
+                            onNavigate(HamburgerScreen.Config)
+                        }
+                    }
+                    Box(Modifier.weight(1f)) {
+                        DashboardCard("Contact Us", Icons.Default.Phone) {
+                            onNavigate(HamburgerScreen.Contact)
+                        }
                     }
                 }
             }

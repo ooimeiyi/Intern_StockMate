@@ -27,6 +27,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.text.font.FontWeight
 import com.example.intern_stockmate.ui.dashboard.MainScreenWithMenu
+import com.example.intern_stockmate.model.AccessRole
+import com.example.intern_stockmate.ui.access.AccessScreen
 import com.example.intern_stockmate.ui.configuration.ConfigScreen
 import com.example.intern_stockmate.ui.loginScreen.LogInScreen
 import com.example.intern_stockmate.data.CompanyContext
@@ -40,6 +42,7 @@ import com.example.intern_stockmate.viewModel.LoginViewModelFactory
 private enum class AuthStage {
     LOGIN,
     ACCOUNT_BOOK,
+    ACCESS,
     DASHBOARD,
 }
 
@@ -56,6 +59,7 @@ fun StockMateScreen() {
     )
     var authStage by rememberSaveable { mutableStateOf(AuthStage.LOGIN.name) }
     var showConfigFromLogin by rememberSaveable { mutableStateOf(false) }
+    var accessRole by rememberSaveable { mutableStateOf(AccessRole.ADMIN.name) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
@@ -76,16 +80,29 @@ fun StockMateScreen() {
             if (stage == AuthStage.DASHBOARD.name) {
                 MainScreenWithMenu(
                     loginViewModel = loginViewModel,
+                    accessRole = AccessRole.valueOf(accessRole),
                     onLogout = {
-                        authStage = AuthStage.LOGIN.name
+                        authStage = AuthStage.ACCESS.name
                         showConfigFromLogin = false
+                        accessRole = AccessRole.ADMIN.name
                     }
                 )
             } else {
-                if (stage == AuthStage.ACCOUNT_BOOK.name) {
+                if (stage == AuthStage.ACCESS.name) {
+                    AccessScreen(
+                        loginViewModel = loginViewModel,
+                        onSwitchAccountBook = {
+                            authStage = AuthStage.ACCOUNT_BOOK.name
+                        },
+                        onAccessGranted = { selectedRole ->
+                            accessRole = selectedRole.name
+                            authStage = AuthStage.DASHBOARD.name
+                        }
+                    )
+                } else if (stage == AuthStage.ACCOUNT_BOOK.name) {
                     AccountBookScreen(
                         onConfirm = {
-                            authStage = AuthStage.DASHBOARD.name
+                            authStage = AuthStage.ACCESS.name
                             showConfigFromLogin = false
                         }
                     )
@@ -126,7 +143,7 @@ fun StockMateScreen() {
                                         authStage = AuthStage.ACCOUNT_BOOK.name
                                     } else {
                                         AccountBookContext.updateSelectedAccountBook(context, savedAccountBook)
-                                        authStage = AuthStage.DASHBOARD.name
+                                        authStage = AuthStage.ACCESS.name
                                     }
                                     showConfigFromLogin = false
                                 },

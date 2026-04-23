@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.*
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.intern_stockmate.model.AccessRole
 import com.example.intern_stockmate.model.HamburgerScreen
 import com.example.intern_stockmate.ui.configuration.ConfigScreen
 import com.example.intern_stockmate.ui.contact.ContactScreen
@@ -46,9 +47,24 @@ import kotlinx.coroutines.launch
 @Composable
 fun MainScreenWithMenu(
     loginViewModel: LoginViewModel,
+    accessRole: AccessRole,
     onLogout: () -> Unit
 ) {
     val navController = rememberNavController()
+
+    val allowedScreens = remember(accessRole) {
+        if (accessRole == AccessRole.STOCK) {
+            setOf(
+                HamburgerScreen.Dashboard.route,
+                HamburgerScreen.StockList.route,
+                HamburgerScreen.StockTake.route,
+                "stockDetail",
+                "adjustmentDetails"
+            )
+        } else {
+            HamburgerScreen.all.map { it.route }.toSet() + setOf("stockDetail", "adjustmentDetails", "salesOrderDetails")
+        }
+    }
 
     val stockViewModel: StockViewModel = viewModel()
     val stockAdjustmentViewModel: StockAdjustmentViewModel = viewModel(
@@ -70,6 +86,7 @@ fun MainScreenWithMenu(
     val scope = rememberCoroutineScope()
 
     fun navigateToScreen(screen: HamburgerScreen) {
+        if (!allowedScreens.contains(screen.route)) return
         navController.navigate(screen.route) {
             popUpTo(HamburgerScreen.Dashboard.route) { saveState = true }
             launchSingleTop = true
@@ -175,95 +192,133 @@ fun MainScreenWithMenu(
                 startDestination = HamburgerScreen.Dashboard.route
             ) {
                 composable(HamburgerScreen.Dashboard.route) {
-                    DashboardScreen(onNavigate = ::navigateToScreen)
+                    DashboardScreen(onNavigate = ::navigateToScreen, accessRole = accessRole)
                 }
 
-                composable(HamburgerScreen.StockList.route) {
-                    StockListScreenContainer(navController = navController)
-                }
-
-                composable("stockDetail") {
-                    val item = navController.previousBackStackEntry
-                        ?.savedStateHandle
-                        ?.get<com.example.intern_stockmate.model.StockItem>("selectedStockItem")
-                    if (item != null) {
-                        StockDetailScreen(item = item)
+                if (allowedScreens.contains(HamburgerScreen.StockList.route)) {
+                    composable(HamburgerScreen.StockList.route) {
+                        StockListScreenContainer(navController = navController)
                     }
                 }
 
-                composable(HamburgerScreen.StockTake.route) {
-                    StockAdjustmentScreen(navController = navController, stockViewModel = stockAdjustmentViewModel)
+                if (allowedScreens.contains("stockDetail")) {
+                    composable("stockDetail") {
+                    val item = navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.get<com.example.intern_stockmate.model.StockItem>("selectedStockItem")
+                        if (item != null) {
+                            StockDetailScreen(item = item)
+                        }
+                    }
                 }
 
-                composable("adjustmentDetails") {
-                    AdjustmentItemsScreen(
-                        navController = navController,
-                        stockViewModel = stockViewModel,
-                        stockAdjustmentViewModel = stockAdjustmentViewModel
-                    )
+                if (allowedScreens.contains(HamburgerScreen.StockTake.route)) {
+                    composable(HamburgerScreen.StockTake.route) {
+                        StockAdjustmentScreen(navController = navController, stockViewModel = stockAdjustmentViewModel)
+                    }
                 }
 
-                composable(HamburgerScreen.SalesOrder.route) {
-                    SalesOrderScreen(
-                        navController = navController,
-                        salesOrderViewModel = salesOrderViewModel
-                    )
+                if (allowedScreens.contains("adjustmentDetails")) {
+                    composable("adjustmentDetails") {
+                        AdjustmentItemsScreen(
+                            navController = navController,
+                            stockViewModel = stockViewModel,
+                            stockAdjustmentViewModel = stockAdjustmentViewModel
+                        )
+                    }
                 }
 
-                composable("salesOrderDetails") {
-                    SalesOrderDetailsScreen(
-                        navController = navController,
-                        stockViewModel = stockViewModel,
-                        salesOrderViewModel = salesOrderViewModel
-                    )
+                if (allowedScreens.contains(HamburgerScreen.SalesOrder.route)) {
+                    composable(HamburgerScreen.SalesOrder.route) {
+                        SalesOrderScreen(
+                            navController = navController,
+                            salesOrderViewModel = salesOrderViewModel
+                        )
+                    }
                 }
 
-                composable(HamburgerScreen.SalesOverview.route) {
-                    SalesOverviewScreenContainer()
+                if (allowedScreens.contains("salesOrderDetails")) {
+                    composable("salesOrderDetails") {
+                        SalesOrderDetailsScreen(
+                            navController = navController,
+                            stockViewModel = stockViewModel,
+                            salesOrderViewModel = salesOrderViewModel
+                        )
+                    }
                 }
 
-                composable(HamburgerScreen.HourlySales.route) {
-                    HourlySalesScreenContainer()
+                if (allowedScreens.contains(HamburgerScreen.SalesOverview.route)) {
+                    composable(HamburgerScreen.SalesOverview.route) {
+                        SalesOverviewScreenContainer()
+                    }
                 }
 
-                composable(HamburgerScreen.DailySales.route) {
-                    DailySalesScreenContainer()
+                if (allowedScreens.contains(HamburgerScreen.HourlySales.route)) {
+                    composable(HamburgerScreen.HourlySales.route) {
+                        HourlySalesScreenContainer()
+                    }
                 }
 
-                composable(HamburgerScreen.MonthlySales.route) {
-                    MonthlySalesScreenContainer()
+                if (allowedScreens.contains(HamburgerScreen.DailySales.route)) {
+                    composable(HamburgerScreen.DailySales.route) {
+                        DailySalesScreenContainer()
+                    }
                 }
 
-                composable(HamburgerScreen.Rank.route) {
-                    SalesRankScreenContainer()
+                if (allowedScreens.contains(HamburgerScreen.MonthlySales.route)) {
+                    composable(HamburgerScreen.MonthlySales.route) {
+                        MonthlySalesScreenContainer()
+                    }
                 }
 
-                composable(HamburgerScreen.Items.route) {
-                    ItemInfoScreenContainer()
+                if (allowedScreens.contains(HamburgerScreen.Rank.route)) {
+                    composable(HamburgerScreen.Rank.route) {
+                        SalesRankScreenContainer()
+                    }
                 }
 
-                composable(HamburgerScreen.Members.route) {
-                    MemberInfoScreenContainer()
+                if (allowedScreens.contains(HamburgerScreen.Items.route)) {
+                    composable(HamburgerScreen.Items.route) {
+                        ItemInfoScreenContainer()
+                    }
                 }
 
-                composable(HamburgerScreen.Debtor.route) {
-                    DebtorInfoScreenContainer()
+                if (allowedScreens.contains(HamburgerScreen.Members.route)) {
+                    composable(HamburgerScreen.Members.route) {
+                        MemberInfoScreenContainer()
+                    }
                 }
 
-                composable(HamburgerScreen.Creditor.route) {
-                    CreditorInfoScreenContainer()
+                if (allowedScreens.contains(HamburgerScreen.Members.route)) {
+                    composable(HamburgerScreen.Members.route) {
+                        MemberInfoScreenContainer()
+                    }
                 }
 
-                composable(HamburgerScreen.Config.route) {
-                    ConfigScreen(
-                        innerPadding = PaddingValues(0.dp),
-                        loginViewModel = loginViewModel,
-                        scope = scope
-                    )
+                if (allowedScreens.contains(HamburgerScreen.Creditor.route)) {
+                    composable(HamburgerScreen.Creditor.route) {
+                        CreditorInfoScreenContainer()
+                    }
                 }
 
-                composable(HamburgerScreen.Contact.route) {
-                    ContactScreen()
+                if (allowedScreens.contains(HamburgerScreen.Config.route)) {
+                    composable(HamburgerScreen.Config.route) {
+                        ConfigScreen(
+                            innerPadding = PaddingValues(0.dp),
+                            loginViewModel = loginViewModel,
+                            scope = scope
+                        )
+                    }
+                }
+
+                if (allowedScreens.contains(HamburgerScreen.Config.route)) {
+                    composable(HamburgerScreen.Config.route) {
+                        ConfigScreen(
+                            innerPadding = PaddingValues(0.dp),
+                            loginViewModel = loginViewModel,
+                            scope = scope
+                        )
+                    }
                 }
             }
         }
