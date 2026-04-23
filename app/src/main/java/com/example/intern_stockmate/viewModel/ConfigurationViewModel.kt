@@ -8,8 +8,10 @@ import com.example.intern_stockmate.data.DocumentNumberFormatStore
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.QuerySnapshot
+import com.example.intern_stockmate.model.StockAccessRights
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,6 +40,9 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
     val stockAdjustmentFormat: StateFlow<String> = DocumentNumberFormatStore.stockAdjustmentFormat
     val adminPassword: StateFlow<String> = AccessPasswordStore.adminPassword
     val stockPassword: StateFlow<String> = AccessPasswordStore.stockPassword
+
+    private val _enabledStockAccessRoutes = MutableStateFlow<Set<String>>(emptySet())
+    val enabledStockAccessRoutes: StateFlow<Set<String>> = _enabledStockAccessRoutes.asStateFlow()
 
     private var companiesListener: ListenerRegistration? = null
     private var userAccessListener: ListenerRegistration? = null
@@ -131,6 +136,18 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
                     ?: emptySet()
 
                 allowedCompanyIds = allowed
+
+                val rightsMap = snapshot?.get(STOCK_ACCESS_RIGHTS_FIELD) as? Map<*, *>
+                val enabledRoutes = rightsMap
+                    ?.mapNotNull { (key, value) ->
+                        val route = key as? String
+                        val enabled = value as? Boolean
+                        if (route != null && enabled == true) route else null
+                    }
+                    ?.toSet()
+                    .orEmpty()
+
+                _enabledStockAccessRoutes.value = enabledRoutes
                 publishAccessibleCompanies()
             }
     }
@@ -259,6 +276,37 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
         return Result.success(Unit)
     }
 
+    fun updateStockAccessRight(route: String, enabled: Boolean): Result<Unit> {
+        val email = auth.currentUser?.email?.trim().orEmpty()
+        if (email.isBlank()) {
+            return Result.failure(IllegalStateException("Please log in to update stock access rights"))
+        }
+
+        if (StockAccessRights.configurableRights.none { it.route == route }) {
+            return Result.failure(IllegalArgumentException("Invalid route: $route"))
+        }
+
+        val updateValue: Any = if (enabled) true else FieldValue.delete()
+        firestore.collection(USERS_COLLECTION)
+            .document(email)
+            .update("$STOCK_ACCESS_RIGHTS_FIELD.$route", updateValue)
+            .addOnFailureListener { error ->
+                if (error.message?.contains("No document to update", ignoreCase = true) == true) {
+                    val initialValue = if (enabled) true else null
+                    val payload = mutableMapOf<String, Any>()
+                    payload[STOCK_ACCESS_RIGHTS_FIELD] = if (initialValue == null) emptyMap<String, Any>() else mapOf(route to initialValue)
+                    firestore.collection(USERS_COLLECTION).document(email).set(payload, com.google.firebase.firestore.SetOptions.merge())
+                }
+            }
+
+        _enabledStockAccessRoutes.value = if (enabled) {
+            _enabledStockAccessRoutes.value + route
+        } else {
+            _enabledStockAccessRoutes.value - route
+        }
+        return Result.success(Unit)
+    }
+
     override fun onCleared() {
         auth.removeAuthStateListener(authStateListener)
         userAccessListener?.remove()
@@ -271,6 +319,7 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
     private companion object {
         const val COMPANIES_COLLECTION = "Companies"
         const val USERS_COLLECTION = "Users"
+        const val STOCK_ACCESS_RIGHTS_FIELD = "StockAccessRights"
         val COMPANY_SUBCOLLECTION_HINTS = listOf(
             "CreditorSummary",
             "DebtorSummary",

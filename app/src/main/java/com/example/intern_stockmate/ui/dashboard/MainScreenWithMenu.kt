@@ -18,6 +18,7 @@ import androidx.navigation.compose.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.intern_stockmate.model.AccessRole
 import com.example.intern_stockmate.model.HamburgerScreen
+import com.example.intern_stockmate.model.StockAccessRights
 import com.example.intern_stockmate.ui.configuration.ConfigScreen
 import com.example.intern_stockmate.ui.contact.ContactScreen
 import com.example.intern_stockmate.ui.creditor.CreditorInfoScreenContainer
@@ -35,6 +36,7 @@ import com.example.intern_stockmate.ui.stockLIst.StockDetailScreen
 import com.example.intern_stockmate.ui.stockAdjustment.AdjustmentItemsScreen
 import com.example.intern_stockmate.ui.stockAdjustment.StockAdjustmentScreen
 import com.example.intern_stockmate.ui.stockLIst.StockListScreenContainer
+import com.example.intern_stockmate.viewModel.ConfigurationViewModel
 import com.example.intern_stockmate.viewModel.LoginViewModel
 import com.example.intern_stockmate.viewModel.SalesOrderViewModel
 import com.example.intern_stockmate.viewModel.SalesOrderViewModelFactory
@@ -51,16 +53,12 @@ fun MainScreenWithMenu(
     onLogout: () -> Unit
 ) {
     val navController = rememberNavController()
+    val configurationViewModel: ConfigurationViewModel = viewModel()
+    val enabledStockAccessRoutes by configurationViewModel.enabledStockAccessRoutes.collectAsState()
 
-    val allowedScreens = remember(accessRole) {
+    val allowedScreens = remember(accessRole, enabledStockAccessRoutes) {
         if (accessRole == AccessRole.STOCK) {
-            setOf(
-                HamburgerScreen.Dashboard.route,
-                HamburgerScreen.StockList.route,
-                HamburgerScreen.StockTake.route,
-                "stockDetail",
-                "adjustmentDetails"
-            )
+            StockAccessRights.stockAllowedRoutesFromRemote(enabledStockAccessRoutes) + setOf("stockDetail")
         } else {
             HamburgerScreen.all.map { it.route }.toSet() + setOf("stockDetail", "adjustmentDetails", "salesOrderDetails")
         }
@@ -192,7 +190,11 @@ fun MainScreenWithMenu(
                 startDestination = HamburgerScreen.Dashboard.route
             ) {
                 composable(HamburgerScreen.Dashboard.route) {
-                    DashboardScreen(onNavigate = ::navigateToScreen, accessRole = accessRole)
+                    DashboardScreen(
+                        onNavigate = ::navigateToScreen,
+                        accessRole = accessRole,
+                        allowedStockRoutes = allowedScreens
+                    )
                 }
 
                 if (allowedScreens.contains(HamburgerScreen.StockList.route)) {
@@ -311,13 +313,9 @@ fun MainScreenWithMenu(
                     }
                 }
 
-                if (allowedScreens.contains(HamburgerScreen.Config.route)) {
-                    composable(HamburgerScreen.Config.route) {
-                        ConfigScreen(
-                            innerPadding = PaddingValues(0.dp),
-                            loginViewModel = loginViewModel,
-                            scope = scope
-                        )
+                if (allowedScreens.contains(HamburgerScreen.Contact.route)) {
+                    composable(HamburgerScreen.Contact.route) {
+                        ContactScreen()
                     }
                 }
             }

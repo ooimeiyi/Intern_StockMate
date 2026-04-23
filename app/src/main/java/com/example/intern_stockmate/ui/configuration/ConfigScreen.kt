@@ -47,6 +47,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -70,6 +72,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.intern_stockmate.viewModel.CompanyListUiState
+import com.example.intern_stockmate.model.StockAccessRights
 import com.example.intern_stockmate.viewModel.ConfigurationViewModel
 import kotlinx.coroutines.CoroutineScope
 
@@ -92,6 +95,7 @@ fun ConfigScreen(
     var adjustmentFormat by remember(savedStockAdjustmentFormat) { mutableStateOf(savedStockAdjustmentFormat) }
     val savedAdminPassword by configurationViewModel.adminPassword.collectAsState()
     val savedStockPassword by configurationViewModel.stockPassword.collectAsState()
+    val enabledStockAccessRoutes by configurationViewModel.enabledStockAccessRoutes.collectAsState()
     var adminPassword by remember(savedAdminPassword) { mutableStateOf(savedAdminPassword) }
     var stockPassword by remember(savedStockPassword) { mutableStateOf(savedStockPassword) }
 
@@ -199,8 +203,36 @@ fun ConfigScreen(
             )
         }
 
+        ManagementCard(title = "Stock Access Rights", icon = Icons.Default.Settings) {
+            Text(
+                text = "Default access for stock users: Stock List, Sales Order, and Stock Adjustment. Enable extra screens below.",
+                fontSize = 14.sp,
+                color = Color.Gray,
+                lineHeight = 20.sp,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+
+            StockAccessRights.configurableRights.forEach { option ->
+                PermissionItem(
+                    title = option.title,
+                    subtitle = option.subtitle,
+                    isEnabled = enabledStockAccessRoutes.contains(option.route),
+                    onCheckedChange = { enabled ->
+                        val result = configurationViewModel.updateStockAccessRight(option.route, enabled)
+                        if (result.isFailure) {
+                            Toast.makeText(
+                                context,
+                                result.exceptionOrNull()?.message ?: "Unable to update access right",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                )
+            }
+        }
+
+
         ManagementCard(title = "Login Passwords", icon = Icons.Outlined.PersonOutline) {
-            val darkNavy = Color(0xFF101828)
             Text(
                 text = "Update the passwords required to access the Admin and Stock profiles.",
                 fontSize = 14.sp,
@@ -380,6 +412,44 @@ fun ConfigScreen(
 
             }
         }
+    }
+}
+
+@Composable
+private fun PermissionItem(
+    title: String,
+    subtitle: String,
+    isEnabled: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+            .border(1.dp, Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(text = subtitle, fontSize = 12.sp, color = Color.Gray)
+        }
+        Switch(
+            checked = isEnabled,
+            onCheckedChange = onCheckedChange,
+
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = Color(0xFFEF3636),
+
+                uncheckedThumbColor = Color.White,
+                uncheckedTrackColor = Color.LightGray,
+
+                checkedBorderColor = Color(0xFFEF3636),
+                uncheckedBorderColor = Color.LightGray
+        )
+        )
     }
 }
 

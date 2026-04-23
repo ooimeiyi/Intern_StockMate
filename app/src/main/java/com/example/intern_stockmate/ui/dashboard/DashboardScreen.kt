@@ -25,8 +25,10 @@ import com.example.intern_stockmate.model.HamburgerScreen
 fun DashboardScreen(
     onNavigate: (HamburgerScreen) -> Unit,
     accessRole: AccessRole,
+    allowedStockRoutes: Set<String> = emptySet()
 ) {
     val isStockOnly = accessRole == AccessRole.STOCK
+    fun canAccess(screen: HamburgerScreen): Boolean = !isStockOnly || allowedStockRoutes.contains(screen.route)
 
     LazyColumn(
         modifier = Modifier
@@ -38,22 +40,142 @@ fun DashboardScreen(
         item {
             Row(Modifier.padding(horizontal = 8.dp)) {
                 Box(Modifier.weight(1f)) {
-                    DashboardCard("Stock List", Icons.Default.Inventory) {
-                        onNavigate(HamburgerScreen.StockList)
-                    }
+                    DashboardCard("Stock List", Icons.Default.Inventory) { onNavigate(HamburgerScreen.StockList) }
                 }
                 Box(Modifier.weight(1f)) {
-                    DashboardCard("Stock Take", Icons.Default.SyncAlt) {
-                        onNavigate(HamburgerScreen.StockTake)
+                    if (canAccess(HamburgerScreen.StockTake)) {
+                        DashboardCard("Stock Take", Icons.Default.SyncAlt) { onNavigate(HamburgerScreen.StockTake) }
                     }
                 }
             }
 
-            if (!isStockOnly) {
+            if (canAccess(HamburgerScreen.SalesOrder)) {
                 Row(Modifier.padding(horizontal = 8.dp)) {
                     Box(Modifier.weight(1f)) {
-                        DashboardCard("Sales Order", Icons.Default.ShoppingCart) {
-                            onNavigate(HamburgerScreen.SalesOrder)
+                        DashboardCard("Sales Order", Icons.Default.ShoppingCart) { onNavigate(HamburgerScreen.SalesOrder) }
+                    }
+                    Spacer(Modifier.weight(1f))
+                }
+            }
+        }
+
+        val salesScreens = listOf(
+            HamburgerScreen.SalesOverview,
+            HamburgerScreen.HourlySales,
+            HamburgerScreen.DailySales,
+            HamburgerScreen.MonthlySales,
+            HamburgerScreen.Rank
+        )
+        if (salesScreens.any(::canAccess)) {
+            item { SectionHeader("Sales Report") }
+
+            item {
+                Row(Modifier.padding(horizontal = 8.dp)) {
+                    Box(Modifier.weight(1f)) {
+                        if (canAccess(HamburgerScreen.SalesOverview)) {
+                            DashboardCard("Sales Overview", Icons.Default.PieChart) {
+                                onNavigate(
+                                    HamburgerScreen.SalesOverview
+                                )
+                            }
+                        }
+                    }
+                    Box(Modifier.weight(1f)) {
+                        if (canAccess(HamburgerScreen.HourlySales)) {
+                            DashboardCard("Hourly Sales", Icons.Default.Schedule) {
+                                onNavigate(
+                                    HamburgerScreen.HourlySales
+                                )
+                            }
+                        }
+                    }
+                }
+
+
+                Row(Modifier.padding(horizontal = 8.dp)) {
+                    Box(Modifier.weight(1f)) {
+                        if (canAccess(HamburgerScreen.DailySales)) {
+                            DashboardCard("Daily Sales", Icons.Default.Today) {
+                                onNavigate(
+                                    HamburgerScreen.DailySales
+                                )
+                            }
+                        }
+                    }
+
+                    Box(Modifier.weight(1f)) {
+                        if (canAccess(HamburgerScreen.MonthlySales)) {
+                            DashboardCard("Monthly Sales", Icons.Default.DateRange) {
+                                onNavigate(
+                                    HamburgerScreen.MonthlySales
+                                )
+                            }
+                        }
+                    }
+                }
+
+
+                Row(Modifier.padding(horizontal = 8.dp)) {
+                    Box(Modifier.weight(1f)) {
+                        if (canAccess(HamburgerScreen.Rank)) {
+                            DashboardCard("Sales Rank", Icons.Default.TrendingUp) {
+                                onNavigate(
+                                    HamburgerScreen.Rank
+                                )
+                            }
+                        }
+                    }
+                    Spacer(Modifier.weight(1f))
+                }
+            }
+        }
+        if (canAccess(HamburgerScreen.Items)) {
+            item { SectionHeader("Item Info") }
+
+            item {
+                Row(Modifier.padding(horizontal = 8.dp)) {
+                    Box(Modifier.weight(1f)) {
+                        DashboardCard("Item Info", Icons.Default.Info) { onNavigate(HamburgerScreen.Items) }
+                    }
+                    Spacer(Modifier.weight(1f))
+                }
+            }
+        }
+        val crmScreens = listOf(HamburgerScreen.Members, HamburgerScreen.Debtor, HamburgerScreen.Creditor)
+        if (crmScreens.any(::canAccess)) {
+            item { SectionHeader("CRM & Account") }
+
+            item {
+                Row(Modifier.padding(horizontal = 8.dp)) {
+                    Box(Modifier.weight(1f)) {
+                        if (canAccess(HamburgerScreen.Members)) {
+                            DashboardCard("Member Info", Icons.Default.AccountCircle) {
+                                onNavigate(
+                                    HamburgerScreen.Members
+                                )
+                            }
+                        }
+                    }
+                    Box(Modifier.weight(1f)) {
+                        if (canAccess(HamburgerScreen.Debtor)) {
+                            DashboardCard("Debtor Info", Icons.Default.BusinessCenter) {
+                                onNavigate(
+                                    HamburgerScreen.Debtor
+                                )
+                            }
+                        }
+                    }
+                }
+
+
+                Row(Modifier.padding(horizontal = 8.dp)) {
+                    Box(Modifier.weight(1f)) {
+                        if (canAccess(HamburgerScreen.Creditor)) {
+                            DashboardCard("Creditor Info", Icons.Default.CreditCard) {
+                                onNavigate(
+                                    HamburgerScreen.Creditor
+                                )
+                            }
                         }
                     }
                     Spacer(Modifier.weight(1f))
@@ -61,99 +183,18 @@ fun DashboardScreen(
             }
         }
 
-        if (!isStockOnly) {
-            item { SectionHeader("Sales Report") }
-
-            item {
-                Row(Modifier.padding(horizontal = 8.dp)) {
-                    Box(Modifier.weight(1f)) {
-                        DashboardCard("Sales Overview", Icons.Default.PieChart) {
-                            onNavigate(HamburgerScreen.SalesOverview)
-                        }
-                    }
-                    Box(Modifier.weight(1f)) {
-                        DashboardCard("Hourly Sales", Icons.Default.Schedule) {
-                            onNavigate(HamburgerScreen.HourlySales)
-                        }
-                    }
-                }
-
-
-                Row(Modifier.padding(horizontal = 8.dp)) {
-                    Box(Modifier.weight(1f)) {
-                        DashboardCard("Daily Sales", Icons.Default.Today) {
-                            onNavigate(HamburgerScreen.DailySales)
-                        }
-                    }
-
-                    Box(Modifier.weight(1f)) {
-                        DashboardCard("Monthly Sales", Icons.Default.DateRange) {
-                            onNavigate(HamburgerScreen.MonthlySales)
-                        }
-                    }
-                }
-
-
-                Row(Modifier.padding(horizontal = 8.dp)) {
-                    Box(Modifier.weight(1f)) {
-                        DashboardCard("Sales Rank", Icons.Default.TrendingUp) {
-                            onNavigate(HamburgerScreen.Rank)
-                        }
-                    }
-                    Spacer(Modifier.weight(1f))
-                }
-            }
-            item { SectionHeader("Item Info") }
-
-
-            item {
-                Row(Modifier.padding(horizontal = 8.dp)) {
-                    Box(Modifier.weight(1f)) {
-                        DashboardCard("Item Info", Icons.Default.Info) {
-                            onNavigate(HamburgerScreen.Items)
-                        }
-                    }
-                    Spacer(Modifier.weight(1f))
-                }
-            }
-            item { SectionHeader("CRM & Account") }
-
-            item {
-                Row(Modifier.padding(horizontal = 8.dp)) {
-                    Box(Modifier.weight(1f)) {
-                        DashboardCard("Member Info", Icons.Default.AccountCircle) {
-                            onNavigate(HamburgerScreen.Members)
-                        }
-                    }
-                    Box(Modifier.weight(1f)) {
-                        DashboardCard("Debtor Info", Icons.Default.BusinessCenter) {
-                            onNavigate(HamburgerScreen.Debtor)
-                        }
-                    }
-                }
-
-
-                Row(Modifier.padding(horizontal = 8.dp)) {
-                    Box(Modifier.weight(1f)) {
-                        DashboardCard("Creditor Info", Icons.Default.CreditCard) {
-                            onNavigate(HamburgerScreen.Creditor)
-                        }
-                    }
-                    Spacer(Modifier.weight(1f))
-                }
-            }
+        if (!isStockOnly || canAccess(HamburgerScreen.Contact)) {
             item { SectionHeader("Configuration and Contact") }
-
             item {
                 Row(Modifier.padding(horizontal = 8.dp)) {
                     Box(Modifier.weight(1f)) {
-                        DashboardCard("Configuration", Icons.Default.Settings) {
-                            onNavigate(HamburgerScreen.Config)
+                        if (!isStockOnly) {
+                            DashboardCard("Configuration", Icons.Default.Settings) { onNavigate(HamburgerScreen.Config) }
                         }
                     }
                     Box(Modifier.weight(1f)) {
-                        DashboardCard("Contact Us", Icons.Default.Phone) {
-                            onNavigate(HamburgerScreen.Contact)
+                        if (canAccess(HamburgerScreen.Contact)) {
+                            DashboardCard("Contact Us", Icons.Default.Phone) { onNavigate(HamburgerScreen.Contact) }
                         }
                     }
                 }

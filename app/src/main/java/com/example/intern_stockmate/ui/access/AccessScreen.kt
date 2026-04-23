@@ -78,7 +78,7 @@ fun AccessScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
+            .background(Color.White)
             .clickable(
                 indication = null,
                 interactionSource = remember { MutableInteractionSource() }
@@ -153,7 +153,7 @@ fun AccessScreen(
                     modifier = Modifier.padding(top = 4.dp)
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
@@ -216,44 +216,6 @@ fun AccessScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = primaryRed)
                 ) {
                     Text(text = "Access Dashboard", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                }
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = Color(0xFFF9F9F9),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "Default Passwords:",
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 13.sp,
-                            color = Color.Black
-                        )
-                        Row(modifier = Modifier.padding(top = 8.dp)) {
-                            Text("Admin: ", fontSize = 13.sp, color = Color.Black, fontWeight = FontWeight.Bold)
-                            Text(
-                                "admin",
-                                //adminPassword,
-                                color = Color.DarkGray,
-                                fontSize = 13.sp,
-                            )
-                        }
-                        Row(modifier = Modifier.padding(top = 4.dp)) {
-                            Text("Stock User: ", fontSize = 13.sp, color = Color.Black, fontWeight = FontWeight.Bold)
-                            Text(
-                                "stock",
-                                //stockPassword,
-                                color = Color.DarkGray,
-                                fontSize = 13.sp,
-                            )
-                        }
-                    }
                 }
             }
         }
