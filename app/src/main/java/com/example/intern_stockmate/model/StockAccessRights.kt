@@ -29,65 +29,90 @@ object StockAccessRights {
     val configurableRights: List<StockAccessRightOption> = listOf(
         StockAccessRightOption(
             route = HamburgerScreen.SalesOverview.route,
+            remoteKey = "SalesOverview",
             title = "Sales Overview",
             subtitle = "Allow stock staff to view sales summary dashboards.",
             icon = Icons.Default.BarChart
         ),
         StockAccessRightOption(
             route = HamburgerScreen.HourlySales.route,
+            remoteKey = "HourlySales",
             title = "Hourly Sales",
-            subtitle = "Allow stock staff to view hourly sales performance.",
+            subtitle = "Allow stock staff to view hourly sales reports.",
             icon = Icons.Default.Today
         ),
         StockAccessRightOption(
             route = HamburgerScreen.DailySales.route,
+            remoteKey = "DailySales",
             title = "Daily Sales",
-            subtitle = "Allow stock staff to view daily sales data.",
+            subtitle = "Allow stock staff to view daily sales reports.",
             icon = Icons.Default.Today
         ),
         StockAccessRightOption(
             route = HamburgerScreen.MonthlySales.route,
+            remoteKey = "MonthlySales",
             title = "Monthly Sales",
             subtitle = "Allow stock staff to view monthly sales reports.",
             icon = Icons.Default.Today
         ),
         StockAccessRightOption(
             route = HamburgerScreen.Rank.route,
+            remoteKey = "SalesRank",
             title = "Sales Rank",
             subtitle = "Allow stock staff to view top selling item rankings.",
             icon = Icons.Default.TrendingUp
         ),
         StockAccessRightOption(
             route = HamburgerScreen.Items.route,
+            remoteKey = "ItemInfo",
             title = "Item Info",
             subtitle = "Allow stock staff to view item information.",
             icon = Icons.Default.Info
         ),
         StockAccessRightOption(
             route = HamburgerScreen.Members.route,
+            remoteKey = "MemberInfo",
             title = "Member Info",
             subtitle = "Allow stock staff to view member records.",
             icon = Icons.Default.AccountCircle
         ),
         StockAccessRightOption(
             route = HamburgerScreen.Debtor.route,
+            remoteKey = "DebtorInfo",
             title = "Debtor Info",
             subtitle = "Allow stock staff to view debtor information.",
             icon = Icons.Default.BusinessCenter
         ),
         StockAccessRightOption(
             route = HamburgerScreen.Creditor.route,
+            remoteKey = "CreditorInfo",
             title = "Creditor Info",
             subtitle = "Allow stock staff to view creditor information.",
             icon = Icons.Default.CreditCard
         ),
         StockAccessRightOption(
             route = HamburgerScreen.Contact.route,
+            remoteKey = "Contact",
             title = "Contact",
             subtitle = "Allow stock staff to view the contact screen.",
             icon = Icons.Default.Info
         )
     )
+
+    private fun normalizeKey(raw: String): String =
+        raw.filter { it.isLetterOrDigit() }.lowercase()
+
+    private val routeByNormalizedKey: Map<String, String> = buildMap {
+        configurableRights.forEach { option ->
+            put(normalizeKey(option.route), option.route)
+            put(normalizeKey(option.remoteKey), option.route)
+        }
+    }
+
+    fun routeFromRemoteKey(rawKey: String): String? = routeByNormalizedKey[normalizeKey(rawKey)]
+
+    fun remoteKeyForRoute(route: String): String =
+        configurableRights.firstOrNull { it.route == route }?.remoteKey ?: route
 
     fun stockAllowedRoutesFromRemote(enabledRoutes: Set<String>): Set<String> {
         val safeEnabled = enabledRoutes.intersect(configurableRights.map { it.route }.toSet())
@@ -97,6 +122,7 @@ object StockAccessRights {
 
 data class StockAccessRightOption(
     val route: String,
+    val remoteKey: String = route,
     val title: String,
     val subtitle: String,
     val icon: ImageVector

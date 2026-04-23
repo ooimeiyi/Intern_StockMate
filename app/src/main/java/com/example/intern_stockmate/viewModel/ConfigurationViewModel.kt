@@ -140,7 +140,7 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
                 val rightsMap = snapshot?.get(STOCK_ACCESS_RIGHTS_FIELD) as? Map<*, *>
                 val enabledRoutes = rightsMap
                     ?.mapNotNull { (key, value) ->
-                        val route = key as? String
+                        val route = (key as? String)?.let(StockAccessRights::routeFromRemoteKey)
                         val enabled = value as? Boolean
                         if (route != null && enabled == true) route else null
                     }
@@ -287,14 +287,25 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
         }
 
         val updateValue: Any = if (enabled) true else FieldValue.delete()
+        val remoteKey = StockAccessRights.remoteKeyForRoute(route)
+        val updates = mutableMapOf<String, Any>(
+            "$STOCK_ACCESS_RIGHTS_FIELD.$remoteKey" to updateValue
+        )
+        if (remoteKey != route) {
+            updates["$STOCK_ACCESS_RIGHTS_FIELD.$route"] = FieldValue.delete()
+        }
         firestore.collection(USERS_COLLECTION)
             .document(email)
-            .update("$STOCK_ACCESS_RIGHTS_FIELD.$route", updateValue)
+            .update(updates as Map<String, Any>)
             .addOnFailureListener { error ->
                 if (error.message?.contains("No document to update", ignoreCase = true) == true) {
                     val initialValue = if (enabled) true else null
                     val payload = mutableMapOf<String, Any>()
-                    payload[STOCK_ACCESS_RIGHTS_FIELD] = if (initialValue == null) emptyMap<String, Any>() else mapOf(route to initialValue)
+                    payload[STOCK_ACCESS_RIGHTS_FIELD] = if (initialValue == null) {
+                        emptyMap<String, Any>()
+                    } else {
+                        mapOf(remoteKey to initialValue)
+                    }
                     firestore.collection(USERS_COLLECTION).document(email).set(payload, com.google.firebase.firestore.SetOptions.merge())
                 }
             }
