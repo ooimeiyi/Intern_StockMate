@@ -56,15 +56,15 @@ fun DashboardScreen(
             DashboardCardRows(cards = operationCards, onNavigate = onNavigate)
         }
 
-        val salesOperationCards = availableCards(
+        val groupSalesCards = availableCards(
             listOf(
                 DashboardCardConfig("Cash Sales", Icons.Default.PointOfSale, HamburgerScreen.CashSales),
                 DashboardCardConfig("Invoice", Icons.Default.ReceiptLong, HamburgerScreen.Invoice)
             )
         )
-        if (salesOperationCards.isNotEmpty()) {
+        if (groupSalesCards.isNotEmpty()) {
             item { SectionHeader("Group Sales") }
-            item { DashboardCardRows(cards = salesOperationCards, onNavigate = onNavigate) }
+            item { DashboardCardRows(cards = groupSalesCards, onNavigate = onNavigate) }
         }
 
         val salesCards = availableCards(

@@ -6,6 +6,8 @@ import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.BusinessCenter
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.PointOfSale
+import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material.icons.filled.TrendingUp
@@ -22,8 +24,6 @@ object StockAccessRights {
         HamburgerScreen.Dashboard.route,
         HamburgerScreen.StockList.route,
         HamburgerScreen.SalesOrder.route,
-        HamburgerScreen.CashSales.route,
-        HamburgerScreen.Invoice.route,
         "salesOrderDetails",
         HamburgerScreen.StockTake.route,
         "adjustmentDetails"
@@ -108,18 +108,32 @@ object StockAccessRights {
             icon = Icons.Default.Info
         ),
         StockAccessRightOption(
-            route = HamburgerScreen.CashSales.route,
+            route = HamburgerScreen.Contact.route,
             remoteKey = "CashSales",
             title = "Cash Sales",
             subtitle = "Allow stock staff to view the Cash Sales screen.",
             icon = Icons.Default.Info
         ),
         StockAccessRightOption(
-            route = HamburgerScreen.Invoice.route,
+            route = HamburgerScreen.Contact.route,
             remoteKey = "Invoice",
             title = "Invoice",
             subtitle = "Allow stock staff to view the Invoice screen.",
             icon = Icons.Default.Info
+        ),
+        StockAccessRightOption(
+            route = HamburgerScreen.CashSales.route,
+            remoteKey = "CashSales",
+            title = "Cash Sales",
+            subtitle = "Allow stock staff to open the cash sales screen.",
+            icon = Icons.Default.PointOfSale
+        ),
+        StockAccessRightOption(
+            route = HamburgerScreen.Invoice.route,
+            remoteKey = "Invoice",
+            title = "Invoice",
+            subtitle = "Allow stock staff to open the invoice screen.",
+            icon = Icons.Default.ReceiptLong
         )
     )
 
