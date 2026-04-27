@@ -61,6 +61,7 @@ fun StockMateScreen() {
     var authStage by rememberSaveable { mutableStateOf(AuthStage.LOGIN.name) }
     var showConfigFromLogin by rememberSaveable { mutableStateOf(false) }
     var accessRole by rememberSaveable { mutableStateOf(AccessRole.ADMIN.name) }
+    var dashboardSessionKey by rememberSaveable { mutableStateOf(0) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
@@ -80,15 +81,18 @@ fun StockMateScreen() {
             label = "auth_navigation"
         ) { stage ->
             if (stage == AuthStage.DASHBOARD.name) {
-                MainScreenWithMenu(
-                    loginViewModel = loginViewModel,
-                    accessRole = AccessRole.valueOf(accessRole),
-                    onLogout = {
-                        authStage = AuthStage.ACCESS.name
-                        showConfigFromLogin = false
-                        accessRole = AccessRole.ADMIN.name
-                    }
-                )
+                androidx.compose.runtime.key(dashboardSessionKey, accessRole) {
+                    MainScreenWithMenu(
+                        loginViewModel = loginViewModel,
+                        accessRole = AccessRole.valueOf(accessRole),
+                        onLogout = {
+                            authStage = AuthStage.ACCESS.name
+                            showConfigFromLogin = false
+                            accessRole = AccessRole.ADMIN.name
+                            dashboardSessionKey += 1
+                        }
+                    )
+                }
             } else {
                 if (stage == AuthStage.ACCESS.name) {
                     AccessScreen(
