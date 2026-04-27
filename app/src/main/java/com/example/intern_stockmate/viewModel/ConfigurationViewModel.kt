@@ -2,6 +2,7 @@ package com.example.intern_stockmate.viewModel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
+import com.example.intern_stockmate.data.AccountBookContext
 import com.example.intern_stockmate.data.AccessPasswordStore
 import com.example.intern_stockmate.data.CompanyContext
 import com.example.intern_stockmate.data.DocumentNumberFormatStore
@@ -218,9 +219,15 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
         val selected = selectedCompanyId.value
         val selectedExists = companies.any { it.id == selected }
         if (!selectedExists) {
+            val fallbackCompanyId = if (selected.isBlank()) {
+                val selectedAccountBookId = AccountBookContext.selectedAccountBookId.value.trim()
+                companies.firstOrNull { it.id == selectedAccountBookId }?.id ?: companies.first().id
+            } else {
+                companies.first().id
+            }
             CompanyContext.updateSelectedCompany(
                 context = getApplication(),
-                companyId = companies.first().id
+                companyId = fallbackCompanyId
             )
         }
         _companyListState.value = CompanyListUiState.Success(companies)

@@ -62,7 +62,26 @@ fun MainScreenWithMenu(
         if (accessRole == AccessRole.STOCK) {
             StockAccessRights.stockAllowedRoutesFromRemote(enabledStockAccessRoutes) + setOf("stockDetail")
         } else {
-            HamburgerScreen.all.map { it.route }.toSet() + setOf("stockDetail", "adjustmentDetails", "salesOrderDetails")
+            setOf(
+                HamburgerScreen.Dashboard.route,
+                HamburgerScreen.StockList.route,
+                HamburgerScreen.StockTake.route,
+                HamburgerScreen.SalesOrder.route,
+                HamburgerScreen.SalesOverview.route,
+                HamburgerScreen.HourlySales.route,
+                HamburgerScreen.DailySales.route,
+                HamburgerScreen.MonthlySales.route,
+                HamburgerScreen.Rank.route,
+                HamburgerScreen.Items.route,
+                HamburgerScreen.Members.route,
+                HamburgerScreen.Debtor.route,
+                HamburgerScreen.Creditor.route,
+                HamburgerScreen.Config.route,
+                HamburgerScreen.Contact.route,
+                "stockDetail",
+                "adjustmentDetails",
+                "salesOrderDetails"
+            )
         }
     }
 
@@ -117,7 +136,22 @@ fun MainScreenWithMenu(
                         "stockDetail" -> "Stock Details"
                         "adjustmentDetails" -> if (isEditMode) "Edit Stock Take" else "New Stock Take"
                         "salesOrderDetails" -> if (isSalesOrderEditMode) "Edit Sales Order" else "New Sales Order"
-                        else -> HamburgerScreen.all.find { it.route == currentRoute }?.topBarTitle ?: "Sales Mate"
+                        HamburgerScreen.Dashboard.route -> HamburgerScreen.Dashboard.topBarTitle
+                        HamburgerScreen.StockList.route -> HamburgerScreen.StockList.topBarTitle
+                        HamburgerScreen.StockTake.route -> HamburgerScreen.StockTake.topBarTitle
+                        HamburgerScreen.SalesOrder.route -> HamburgerScreen.SalesOrder.topBarTitle
+                        HamburgerScreen.SalesOverview.route -> HamburgerScreen.SalesOverview.topBarTitle
+                        HamburgerScreen.HourlySales.route -> HamburgerScreen.HourlySales.topBarTitle
+                        HamburgerScreen.DailySales.route -> HamburgerScreen.DailySales.topBarTitle
+                        HamburgerScreen.MonthlySales.route -> HamburgerScreen.MonthlySales.topBarTitle
+                        HamburgerScreen.Rank.route -> HamburgerScreen.Rank.topBarTitle
+                        HamburgerScreen.Items.route -> HamburgerScreen.Items.topBarTitle
+                        HamburgerScreen.Members.route -> HamburgerScreen.Members.topBarTitle
+                        HamburgerScreen.Debtor.route -> HamburgerScreen.Debtor.topBarTitle
+                        HamburgerScreen.Creditor.route -> HamburgerScreen.Creditor.topBarTitle
+                        HamburgerScreen.Config.route -> HamburgerScreen.Config.topBarTitle
+                        HamburgerScreen.Contact.route -> HamburgerScreen.Contact.topBarTitle
+                        else -> "Sales Mate"
                     }
                     Text(displayTitle, color = Color.White, fontWeight = FontWeight.Bold)
                 },
