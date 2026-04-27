@@ -108,14 +108,14 @@ object StockAccessRights {
             icon = Icons.Default.Info
         ),
         StockAccessRightOption(
-            route = HamburgerScreen.Contact.route,
+            route = HamburgerScreen.CashSales.route,
             remoteKey = "CashSales",
             title = "Cash Sales",
             subtitle = "Allow stock staff to view the Cash Sales screen.",
             icon = Icons.Default.Info
         ),
         StockAccessRightOption(
-            route = HamburgerScreen.Contact.route,
+            route = HamburgerScreen.Invoice.route,
             remoteKey = "Invoice",
             title = "Invoice",
             subtitle = "Allow stock staff to view the Invoice screen.",
