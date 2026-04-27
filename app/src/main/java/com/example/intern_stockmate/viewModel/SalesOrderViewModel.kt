@@ -249,7 +249,14 @@ class SalesOrderViewModel(
                     )
                 }.sortedByDescending { it.date }
 
-                val localMap = _savedHeaders.value.associateBy { it.soNo }.toMutableMap()
+                val firebaseSoNos = headers.map { it.soNo }.toSet()
+
+                // Keep local KIV headers always, but drop local Submitted headers that were deleted in Firebase.
+                val prunedLocal = _savedHeaders.value.filter { local ->
+                    local.status == "KIV" || firebaseSoNos.contains(local.soNo)
+                }
+
+                val localMap = prunedLocal.associateBy { it.soNo }.toMutableMap()
                 headers.forEach { header ->
                     val localHeader = localMap[header.soNo]
                     localMap[header.soNo] = if (localHeader != null && localHeader.status == "KIV") {
@@ -258,8 +265,17 @@ class SalesOrderViewModel(
                         header
                     }
                 }
-                _savedHeaders.value = localMap.values.sortedByDescending { it.date }
+
+                val merged = localMap.values.sortedByDescending { it.date }
+                _savedHeaders.value = merged
                 persistHeadersToLocal()
+
+                val selected = _selectedHeader.value
+                if (selected != null && selected.status != "KIV" && !firebaseSoNos.contains(selected.soNo)) {
+                    _selectedHeader.value = null
+                    _isEditMode.value = false
+                    selectedItems.clear()
+                }
             }
             .addOnFailureListener { error ->
                 Log.e("SalesOrderViewModel", "Failed to load sales orders", error)

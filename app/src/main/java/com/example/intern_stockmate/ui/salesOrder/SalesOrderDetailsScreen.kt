@@ -136,6 +136,11 @@ fun SalesOrderDetailsScreen(
     var previousLocation by remember { mutableStateOf(selectedLocation) }
     val focusManager = LocalFocusManager.current
 
+    fun markItemAsMostRecent(itemCode: String) {
+        sessionTrackedCodes.remove(itemCode)
+        sessionTrackedCodes.add(itemCode)
+    }
+
     fun addItemFromQuery(query: String) {
         val trimmedQuery = query.trim()
         if (trimmedQuery.isBlank()) return
@@ -160,9 +165,7 @@ fun SalesOrderDetailsScreen(
             fallbackPrice = matchedItem.price
         ) ?: 0.0
 
-        if (!sessionTrackedCodes.contains(matchedItem.itemCode)) {
-            sessionTrackedCodes.add(matchedItem.itemCode)
-        }
+        markItemAsMostRecent(matchedItem.itemCode)
         salesOrderViewModel.addOrIncrementItem(
             itemCode = matchedItem.itemCode,
             defaultUom = defaultUom,
@@ -449,7 +452,9 @@ fun SalesOrderDetailsScreen(
                 val isSessionTracked = sessionTrackedCodes.contains(stockItem.itemCode) && hasSelectedQty
                 hasSelectedQty || isSessionTracked
             }
-            val itemsToShow = pinnedItems
+            val itemsToShow = pinnedItems.sortedByDescending { stockItem ->
+                sessionTrackedCodes.indexOf(stockItem.itemCode)
+            }
 
             if (itemsToShow.isEmpty()) {
                 item {
@@ -597,9 +602,7 @@ fun SalesOrderDetailsScreen(
                                 if (!manuallySelectedCodes.contains(pickerItem.itemCode)) {
                                     manuallySelectedCodes.add(pickerItem.itemCode)
                                 }
-                                if (!sessionTrackedCodes.contains(pickerItem.itemCode)) {
-                                    sessionTrackedCodes.add(pickerItem.itemCode)
-                                }
+                                markItemAsMostRecent(pickerItem.itemCode)
                                 salesOrderViewModel.addOrIncrementItem(
                                     itemCode = pickerItem.itemCode,
                                     defaultUom = defaultUom,

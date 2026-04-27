@@ -369,10 +369,35 @@ class StockAdjustmentViewModel(
                     )
                 }
 
-                val localMap = _savedHeaders.value.associateBy { it.stockTakeNo }.toMutableMap()
-                firebaseHeaders.forEach { header -> localMap[header.stockTakeNo] = header }
-                _savedHeaders.value = localMap.values.sortedByDescending { it.date }
+                val firebaseStockTakeNos = firebaseHeaders.map { it.stockTakeNo }.toSet()
+
+                // Keep local KIV headers always, but drop local Submitted headers that were deleted in Firebase.
+                val prunedLocal = _savedHeaders.value.filter { local ->
+                    local.status == "KIV" || firebaseStockTakeNos.contains(local.stockTakeNo)
+                }
+
+                val localMap = prunedLocal.associateBy { it.stockTakeNo }.toMutableMap()
+                firebaseHeaders.forEach { header ->
+                    val localHeader = localMap[header.stockTakeNo]
+                    localMap[header.stockTakeNo] = if (localHeader != null && localHeader.status == "KIV") {
+                        localHeader
+                    } else {
+                        header
+                    }
+                }
+
+                val merged = localMap.values.sortedByDescending { it.date }
+                _savedHeaders.value = merged
                 persistHeadersToLocal()
+
+                val selected = _selectedHeader.value
+                if (selected != null && selected.status != "KIV" && !firebaseStockTakeNos.contains(selected.stockTakeNo)) {
+                    _selectedHeader.value = null
+                    _isEditMode.value = false
+                    physicalCounts.clear()
+                    diffCounts.clear()
+                    selectedUoms.clear()
+                }
             }
             .addOnFailureListener { exception ->
                 Log.e("StockAdjustmentViewModel", "Load from Firebase failed", exception)

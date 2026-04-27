@@ -136,6 +136,11 @@ fun AdjustmentItemsScreen(
     var previousLocation by remember { mutableStateOf(selectedLocation) }
     val focusManager = LocalFocusManager.current
 
+    fun markItemAsMostRecent(itemCode: String) {
+        sessionTrackedCodes.remove(itemCode)
+        sessionTrackedCodes.add(itemCode)
+    }
+
     LaunchedEffect(locations, selectedLocation, selectedHeader) {
         if (selectedHeader == null && locations.isNotEmpty() && selectedLocation.isBlank()) {
             stockAdjustmentViewModel.onLocationSelected(locations.first())
@@ -186,9 +191,7 @@ fun AdjustmentItemsScreen(
                     (matchesExactItemCode || matchesExactBarCode) && matchesLocation
                 }
                 .forEach { matchedItem ->
-                    if (!sessionTrackedCodes.contains(matchedItem.itemCode)) {
-                        sessionTrackedCodes.add(matchedItem.itemCode)
-                    }
+                    markItemAsMostRecent(matchedItem.itemCode)
                     val itemCode = matchedItem.itemCode
                     val activeUom = selectedUoms[itemCode].orEmpty().ifBlank {
                         matchedItem.uomLocationList
@@ -423,6 +426,8 @@ fun AdjustmentItemsScreen(
                 (pinnedItems + searchedItems).distinctBy { it.itemCode }
             } else {
                 pinnedItems
+            }.sortedByDescending { stockItem ->
+                sessionTrackedCodes.indexOf(stockItem.itemCode)
             }
 
             if (isSearching && isInvalidSearch) {
@@ -541,9 +546,7 @@ fun AdjustmentItemsScreen(
                         items(pickerItems) { pickerItem ->
                             FilterItemRow(item = pickerItem) {
                                 manuallySelectedCodes.add(pickerItem.itemCode)
-                                if (!sessionTrackedCodes.contains(pickerItem.itemCode)) {
-                                    sessionTrackedCodes.add(pickerItem.itemCode)
-                                }
+                                markItemAsMostRecent(pickerItem.itemCode)
                                 val itemCode = pickerItem.itemCode
                                 val activeUom = selectedUoms[itemCode].orEmpty().ifBlank {
                                     pickerItem.uomLocationList
