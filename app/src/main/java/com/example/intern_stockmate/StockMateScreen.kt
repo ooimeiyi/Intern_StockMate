@@ -25,6 +25,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.text.font.FontWeight
 import com.example.intern_stockmate.ui.dashboard.MainScreenWithMenu
 import com.example.intern_stockmate.model.AccessRole
@@ -61,6 +62,7 @@ fun StockMateScreen() {
     var authStage by rememberSaveable { mutableStateOf(AuthStage.LOGIN.name) }
     var showConfigFromLogin by rememberSaveable { mutableStateOf(false) }
     var accessRole by rememberSaveable { mutableStateOf(AccessRole.ADMIN.name) }
+    var isAppDataReady by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
@@ -68,12 +70,22 @@ fun StockMateScreen() {
         AccountBookContext.initialize(context)
         DocumentNumberFormatStore.initialize(context)
         AccessPasswordStore.initialize(context)
+        isAppDataReady = true
+    }
+
+    LaunchedEffect(authStage) {
+        if (authStage != AuthStage.DASHBOARD.name && accessRole != AccessRole.ADMIN.name) {
+            accessRole = AccessRole.ADMIN.name
+        }
     }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = Color.White
     ) {
+        if (!isAppDataReady) {
+            return@Surface
+        }
         Crossfade(
             targetState = authStage,
             animationSpec = tween(durationMillis = 220),
@@ -86,7 +98,6 @@ fun StockMateScreen() {
                     onLogout = {
                         authStage = AuthStage.ACCESS.name
                         showConfigFromLogin = false
-                        accessRole = AccessRole.ADMIN.name
                     }
                 )
             } else {
