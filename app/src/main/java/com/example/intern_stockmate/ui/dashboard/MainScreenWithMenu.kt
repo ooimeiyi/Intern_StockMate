@@ -19,12 +19,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.intern_stockmate.model.AccessRole
 import com.example.intern_stockmate.model.HamburgerScreen
 import com.example.intern_stockmate.model.StockAccessRights
+import com.example.intern_stockmate.ui.cashSales.CashSalesScreen
 import com.example.intern_stockmate.ui.configuration.ConfigScreen
 import com.example.intern_stockmate.ui.contact.ContactScreen
 import com.example.intern_stockmate.ui.creditor.CreditorInfoScreenContainer
 import com.example.intern_stockmate.ui.dailySales.DailySalesScreenContainer
 import com.example.intern_stockmate.ui.debtor.DebtorInfoScreenContainer
 import com.example.intern_stockmate.ui.hourlySales.HourlySalesScreenContainer
+import com.example.intern_stockmate.ui.invoice.InvoiceScreen
 import com.example.intern_stockmate.ui.itemInfo.ItemInfoScreenContainer
 import com.example.intern_stockmate.ui.member.MemberInfoScreenContainer
 import com.example.intern_stockmate.ui.monthlySales.MonthlySalesScreenContainer
@@ -246,6 +248,18 @@ fun MainScreenWithMenu(
                             stockViewModel = stockViewModel,
                             salesOrderViewModel = salesOrderViewModel
                         )
+                    }
+                }
+
+                if (allowedScreens.contains(HamburgerScreen.CashSales.route)) {
+                    composable(HamburgerScreen.CashSales.route) {
+                        CashSalesScreen()
+                    }
+                }
+
+                if (allowedScreens.contains(HamburgerScreen.Invoice.route)) {
+                    composable(HamburgerScreen.Invoice.route) {
+                        InvoiceScreen()
                     }
                 }
 

@@ -56,6 +56,17 @@ fun DashboardScreen(
             DashboardCardRows(cards = operationCards, onNavigate = onNavigate)
         }
 
+        val salesOperationCards = availableCards(
+            listOf(
+                DashboardCardConfig("Cash Sales", Icons.Default.PointOfSale, HamburgerScreen.CashSales),
+                DashboardCardConfig("Invoice", Icons.Default.ReceiptLong, HamburgerScreen.Invoice)
+            )
+        )
+        if (salesOperationCards.isNotEmpty()) {
+            item { SectionHeader("Group Sales") }
+            item { DashboardCardRows(cards = salesOperationCards, onNavigate = onNavigate) }
+        }
+
         val salesCards = availableCards(
             listOf(
                 DashboardCardConfig("Sales Overview", Icons.Default.PieChart, HamburgerScreen.SalesOverview),

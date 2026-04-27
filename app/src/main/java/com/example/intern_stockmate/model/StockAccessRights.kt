@@ -22,6 +22,8 @@ object StockAccessRights {
         HamburgerScreen.Dashboard.route,
         HamburgerScreen.StockList.route,
         HamburgerScreen.SalesOrder.route,
+        HamburgerScreen.CashSales.route,
+        HamburgerScreen.Invoice.route,
         "salesOrderDetails",
         HamburgerScreen.StockTake.route,
         "adjustmentDetails"
@@ -103,6 +105,20 @@ object StockAccessRights {
             remoteKey = "Contact",
             title = "Contact",
             subtitle = "Allow stock staff to view the contact screen.",
+            icon = Icons.Default.Info
+        ),
+        StockAccessRightOption(
+            route = HamburgerScreen.Contact.route,
+            remoteKey = "CashSales",
+            title = "Cash Sales",
+            subtitle = "Allow stock staff to view the Cash Sales screen.",
+            icon = Icons.Default.Info
+        ),
+        StockAccessRightOption(
+            route = HamburgerScreen.Contact.route,
+            remoteKey = "Invoice",
+            title = "Invoice",
+            subtitle = "Allow stock staff to view the Invoice screen.",
             icon = Icons.Default.Info
         )
     )

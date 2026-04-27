@@ -29,7 +29,10 @@ sealed class HamburgerScreen(
     object Config : HamburgerScreen("config", "Configuration", "Configuration",Icons.Default.Settings)
     object Contact : HamburgerScreen("contact", "Contact Us", "Find Us",Icons.Default.Phone)
 
+    object CashSales : HamburgerScreen("cashSales", "Cash Sales", "Cash Sales", Icons.Default.PointOfSale)
+    object Invoice : HamburgerScreen("invoice", "Invoice", "Invoice", Icons.Default.ReceiptLong)
+
     companion object {
-        val all = listOf(Dashboard, StockList, StockTake, SalesOrder,  SalesOverview, HourlySales, DailySales, MonthlySales, Rank, Items, Members, Debtor, Creditor, Config, Contact)
+        val all = listOf(Dashboard, StockList, StockTake, SalesOrder,  SalesOverview, HourlySales, DailySales, MonthlySales, Rank, Items, Members, Debtor, Creditor, Config, Contact, CashSales, Invoice)
     }
 }
