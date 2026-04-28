@@ -23,7 +23,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.math.BigInteger
 import java.util.UUID
 import kotlin.collections.set
 import kotlin.math.max
@@ -52,7 +51,6 @@ class StockAdjustmentViewModel(
         stockViewModel.onLocationSelected(location)
         stockViewModel.onSearchQueryChange("")
         physicalCounts.clear()
-        diffCounts.clear()
         selectedUoms.clear()
 
         val current = _selectedHeader.value
@@ -62,7 +60,6 @@ class StockAdjustmentViewModel(
     }
 
     val physicalCounts = mutableStateMapOf<String, String>()
-    val diffCounts = mutableStateMapOf<String, String>()
     val selectedUoms = mutableStateMapOf<String, String>()
 
     private val _savedHeaders = MutableStateFlow<List<StockAdjustmentHeader>>(emptyList())
@@ -104,7 +101,6 @@ class StockAdjustmentViewModel(
         location: String
     ) {
         physicalCounts.clear()
-        diffCounts.clear()
         selectedUoms.clear()
 
         _selectedHeader.value = StockAdjustmentHeader(
@@ -135,22 +131,11 @@ class StockAdjustmentViewModel(
         stockViewModel.onLocationSelected(header.location)
 
         physicalCounts.clear()
-        diffCounts.clear()
         selectedUoms.clear()
 
         header.items.forEach { detail ->
             physicalCounts[detail.itemCode] = detail.qty
             selectedUoms[detail.itemCode] = detail.uom
-
-            val item = stockViewModel.allItems.value.find { it.itemCode == detail.itemCode }
-            val selectedUom = detail.uom.ifBlank { item?.uom.orEmpty() }
-            val onHand = item?.uomLocationList
-                ?.find { it.location == header.location && it.uom.equals(selectedUom, ignoreCase = true) }
-                ?.qty
-                ?: item?.locationList?.find { it.location == header.location }?.qty
-                ?: 0
-            val physicalInt = detail.qty.toBigIntegerOrNull() ?: BigInteger.ZERO
-            diffCounts[detail.itemCode] = (physicalInt - onHand.toBigInteger()).toString()
         }
     }
 
@@ -192,20 +177,7 @@ class StockAdjustmentViewModel(
 
         val headerWithId = ensureStockTakeNo(currentHeader)
         val localHeader = buildHeaderWithCurrentItems(headerWithId, "Submitted")
-        val firebaseHeader = localHeader.copy(
-            items = physicalCounts.keys
-                .filter { itemCode -> physicalCounts[itemCode].orEmpty().isNotBlank() }
-                .map { itemCode ->
-                    StockAdjustmentDetail(
-                        itemCode = itemCode,
-                        qty = diffCounts[itemCode] ?: "0",
-                        uom = selectedUoms[itemCode].orEmpty().ifBlank {
-                            stockViewModel.allItems.value.find { it.itemCode == itemCode }?.uom.orEmpty()
-                        }
-                    )
-                }
-        )
-        saveStockAdjustmentToFirebase(firebaseHeader) { success, message ->
+        saveStockAdjustmentToFirebase(localHeader) { success, message ->
             if (success) {
                 upsertHeader(localHeader)
                 persistHeadersToLocal()
@@ -343,19 +315,11 @@ class StockAdjustmentViewModel(
                         ?.mapNotNull { rawItem ->
                             val map = rawItem as? Map<*, *> ?: return@mapNotNull null
                             val itemCode = map["itemCode"] as? String ?: return@mapNotNull null
-                            val diffQtyString = (map["qty"] as? String) ?: (map["qty"]?.toString() ?: "0")
-
-                            val onHand = stockViewModel.allItems.value
-                                .find { it.itemCode == itemCode }
-                                ?.locationList
-                                ?.find { it.location == location }
-                                ?.qty ?: 0
-
-                            val physicalQty = onHand + (diffQtyString.toIntOrNull() ?: 0)
+                            val physicalQtyString = (map["qty"] as? String) ?: (map["qty"]?.toString() ?: "0")
                             val uom = (map["uom"] as? String).orEmpty().ifBlank {
                                 stockViewModel.allItems.value.find { it.itemCode == itemCode }?.uom.orEmpty()
                             }
-                            StockAdjustmentDetail(itemCode = itemCode, qty = physicalQty.toString(), uom = uom)
+                            StockAdjustmentDetail(itemCode = itemCode, qty = physicalQtyString, uom = uom)
                         }
                         ?: emptyList()
 
@@ -395,7 +359,6 @@ class StockAdjustmentViewModel(
                     _selectedHeader.value = null
                     _isEditMode.value = false
                     physicalCounts.clear()
-                    diffCounts.clear()
                     selectedUoms.clear()
                 }
             }

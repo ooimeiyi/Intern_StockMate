@@ -106,7 +106,6 @@ fun AdjustmentItemsScreen(
     stockAdjustmentViewModel: StockAdjustmentViewModel
 ) {
     val physicalCounts = stockAdjustmentViewModel.physicalCounts
-    val diffCounts = stockAdjustmentViewModel.diffCounts
     val selectedUoms = stockAdjustmentViewModel.selectedUoms
     val selectedHeader by stockAdjustmentViewModel.selectedHeader.collectAsState()
 
@@ -205,13 +204,6 @@ fun AdjustmentItemsScreen(
                     val currentPhysical = physicalCounts[itemCode].toBigIntOrZero()
                     val nextPhysical = currentPhysical + BigInteger.ONE
                     physicalCounts[itemCode] = nextPhysical.toString()
-
-                    val onHand = matchedItem.uomLocationList
-                        .find { it.location == selectedLocation && it.uom.equals(activeUom, ignoreCase = true) }
-                        ?.qty
-                        ?: matchedItem.locationList.find { it.location == selectedLocation }?.qty
-                        ?: 0
-                    diffCounts[itemCode] = (nextPhysical - onHand.toBigInteger()).toString()
                 }
         }
         localQuery = ""
@@ -462,7 +454,6 @@ fun AdjustmentItemsScreen(
                     stockItem = item,
                     selectedLocation = selectedLocation,
                     physicalCounts = physicalCounts,
-                    diffCounts = diffCounts,
                     selectedUoms = selectedUoms,
                     onTrackItemInSession = { itemCode ->
                         if (!sessionTrackedCodes.contains(itemCode)) {
@@ -471,7 +462,6 @@ fun AdjustmentItemsScreen(
                     },
                     onDeleteItem = { itemCode ->
                         physicalCounts.remove(itemCode)
-                        diffCounts.remove(itemCode)
                         selectedUoms.remove(itemCode)
                         sessionTrackedCodes.remove(itemCode)
                         manuallySelectedCodes.remove(itemCode)
@@ -560,13 +550,6 @@ fun AdjustmentItemsScreen(
                                 val currentPhysical = physicalCounts[itemCode].toBigIntOrZero()
                                 val nextPhysical = currentPhysical + BigInteger.ONE
                                 physicalCounts[itemCode] = nextPhysical.toString()
-
-                                val onHand = pickerItem.uomLocationList
-                                    .find { it.location == selectedLocation && it.uom.equals(activeUom, ignoreCase = true) }
-                                    ?.qty
-                                    ?: pickerItem.locationList.find { it.location == selectedLocation }?.qty
-                                    ?: 0
-                                diffCounts[itemCode] = (nextPhysical - onHand.toBigInteger()).toString()
                                 stockViewModel.onSearchQueryChange("")
                                 localQuery = ""
                                 showStockPicker = false
@@ -720,7 +703,6 @@ fun StockItemRowLogic(
     stockItem: StockItem,
     selectedLocation: String,
     physicalCounts: MutableMap<String, String>,
-    diffCounts: MutableMap<String, String>,
     selectedUoms: MutableMap<String, String>,
     onTrackItemInSession: (String) -> Unit,
     onDeleteItem: (String) -> Unit
@@ -734,33 +716,16 @@ fun StockItemRowLogic(
         .ifEmpty { listOf(stockItem.uom) }
     val selectedUom = selectedUoms[key].orEmpty().ifBlank { locationUomOptions.first() }
 
-    val onHandQty = stockItem.uomLocationList
-        .find { it.location == selectedLocation && it.uom.equals(selectedUom, ignoreCase = true) }
-        ?.qty
-        ?: stockItem.locationList.find { it.location == selectedLocation }?.qty
-        ?: 0
-
-    val physicalInt = physicalCounts[key].toBigIntOrZero()
-    val computedDiff = physicalInt - onHandQty.toBigInteger()
-
     StockItemFilterRow(
         item = stockItem,
         selectedLocation = selectedLocation,
         physicalValue = physicalCounts[key] ?: "",
-        diffValue = diffCounts[key] ?: computedDiff.toString(),
         selectedUom = selectedUom,
         uomOptions = locationUomOptions,
         onDeleteItem = { onDeleteItem(key) },
         onUomChange = { newUom ->
             onTrackItemInSession(key)
             selectedUoms[key] = newUom
-            val onHand = stockItem.uomLocationList
-                .find { it.location == selectedLocation && it.uom.equals(newUom, ignoreCase = true) }
-                ?.qty
-                ?: stockItem.locationList.find { it.location == selectedLocation }?.qty
-                ?: 0
-            diffCounts[key] =
-                (physicalCounts[key].toBigIntOrZero() - onHand.toBigInteger()).toString()
         },
         onPhysicalChange = { newValue ->
             if (newValue.all { it.isDigit() } || newValue.isEmpty()) {
@@ -768,16 +733,6 @@ fun StockItemRowLogic(
                 physicalCounts[key] = newValue
                 val activeUom = selectedUoms[key].orEmpty().ifBlank { selectedUom }
                 selectedUoms[key] = activeUom
-                val onHand = stockItem.uomLocationList
-                    .find { it.location == selectedLocation && it.uom.equals(activeUom, ignoreCase = true) }
-                    ?.qty
-                    ?: stockItem.locationList.find { it.location == selectedLocation }?.qty
-                    ?: 0
-                diffCounts[key] = if (newValue.isBlank()) {
-                    "0"
-                } else {
-                    (newValue.toBigIntOrZero() - onHand.toBigInteger()).toString()
-                }
             }
         }
     )
@@ -788,18 +743,12 @@ fun StockItemFilterRow(
     item: StockItem,
     selectedLocation: String,
     physicalValue: String,
-    diffValue: String,
     selectedUom: String,
     uomOptions: List<String>,
     onDeleteItem: () -> Unit,
     onUomChange: (String) -> Unit,
     onPhysicalChange: (String) -> Unit
 ) {
-    val onHandQty = item.uomLocationList
-        .find { it.location == selectedLocation && it.uom.equals(selectedUom, ignoreCase = true) }
-        ?.qty
-        ?: item.locationList.find { it.location == selectedLocation }?.qty
-        ?: 0
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -865,7 +814,7 @@ fun StockItemFilterRow(
                     .fillMaxWidth()
                     .horizontalScroll(scrollState)
                     .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 AdjustmentDropdownUom(
@@ -873,12 +822,6 @@ fun StockItemFilterRow(
                     selected = selectedUom,
                     options = uomOptions,
                     onSelect = onUomChange
-                )
-                QtyDisplayBox(
-                    label = "OnHand Qty",
-                    value = onHandQty.toString(),
-                    modifier = Modifier.width(100.dp),
-                    color = Color.Black
                 )
                 EditableQtyBox(
                     label = "Physical Qty",
@@ -889,14 +832,8 @@ fun StockItemFilterRow(
                         }
                     },
                     isNumber = true,
-                    minWidth = 70.dp,
+                    minWidth = 100.dp,
                     color = Color.Black
-                )
-                QtyDisplayBox(
-                    label = "Diff Qty",
-                    value = diffValue,
-                    minWidth = 70.dp,
-                    color = if (diffValue.toBigIntOrZero() < BigInteger.ZERO) Color.Red else Color(0xFF2E7D32)
                 )
             }
         }
