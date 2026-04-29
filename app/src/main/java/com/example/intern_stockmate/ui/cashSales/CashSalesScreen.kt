@@ -37,11 +37,6 @@ fun CashSalesScreen() {
                 fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
-            Text(
-                text = "Empty screen for now (UI first, no save/data yet).",
-                modifier = Modifier.padding(top = 8.dp),
-                color = Color.Gray
-            )
         }
     }
 }
