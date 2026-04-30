@@ -23,6 +23,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.UUID
 import kotlin.collections.set
 import kotlin.math.max
@@ -119,7 +122,14 @@ class StockAdjustmentViewModel(
 
     fun prepareNewAdjustmentHeader(location: String, onReady: () -> Unit) {
         generateNextStockTakeNo { nextStockTakeNo ->
-            prepareAdjustmentHeader("", "", nextStockTakeNo, location)
+            val resolvedLocation = location.ifBlank { locations.value.firstOrNull().orEmpty() }
+            val today = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(Date())
+            prepareAdjustmentHeader(
+                description = "SalesMate Stock Take",
+                date = today,
+                stockTakeNo = nextStockTakeNo,
+                location = resolvedLocation
+            )
             onReady()
         }
     }

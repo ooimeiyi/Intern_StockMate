@@ -184,7 +184,8 @@ fun SalesOrderDetailsScreen(
     }
 
     LaunchedEffect(debtors, selectedHeader) {
-        if (debtor.isBlank() && debtors.isNotEmpty() && selectedHeader == null) {
+        val isNewHeader = selectedHeader?.status == "KIV"
+        if (debtor.isBlank() && debtors.isNotEmpty() && (selectedHeader == null || isNewHeader)) {
             debtor = debtors.first()
         }
     }

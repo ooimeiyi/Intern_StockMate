@@ -117,9 +117,14 @@ fun AdjustmentItemsScreen(
     val allItems by stockViewModel.allItems.collectAsState()
 
     val selectedHeaderKey = selectedHeader?.stockTakeNo
-    var description by remember(selectedHeaderKey) { mutableStateOf(selectedHeader?.description ?: "") }
+    val defaultTodayDate = remember(selectedHeaderKey) {
+        SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(Date())
+    }
+    var description by remember(selectedHeaderKey) {
+        mutableStateOf(selectedHeader?.description ?: "SalesMate Stock Take")
+    }
     var stockTakeNo by remember(selectedHeaderKey) { mutableStateOf(selectedHeader?.stockTakeNo ?: "") }
-    var date by remember(selectedHeaderKey) { mutableStateOf(selectedHeader?.date ?: "") }
+    var date by remember(selectedHeaderKey) { mutableStateOf(selectedHeader?.date ?: defaultTodayDate) }
 
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = androidx.compose.material3.rememberDatePickerState()

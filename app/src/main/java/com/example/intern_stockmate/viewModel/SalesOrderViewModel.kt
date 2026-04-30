@@ -27,6 +27,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlin.math.max
 
 class SalesOrderViewModel(
@@ -127,11 +130,14 @@ class SalesOrderViewModel(
 
     fun prepareNewSalesOrderHeader(location: String, onReady: () -> Unit) {
         generateNextSoNo { nextSoNo ->
+            val resolvedDebtor = debtors.value.firstOrNull().orEmpty()
+            val resolvedLocation = location.ifBlank { locations.value.firstOrNull().orEmpty() }
+            val today = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(Date())
             prepareSalesOrderHeader(
-                debtor = "",
-                date = "",
+                debtor = resolvedDebtor,
+                date = today,
                 soNo = nextSoNo,
-                location = ""
+                location = resolvedLocation
             )
             onReady()
         }
