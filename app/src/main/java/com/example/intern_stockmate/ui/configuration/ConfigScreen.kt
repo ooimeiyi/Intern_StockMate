@@ -25,6 +25,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Save
@@ -224,11 +226,21 @@ fun ConfigScreen(
                 ),
                 border = BorderStroke(1.dp, Color(0xFFEF3636))
             ) {
-                Text(
-                    text = if (showPermissionItems) "Hide Stock Access" else "Show All Stock Access",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = if (showPermissionItems) "Hide permission items"
+                        else "Show all permission items",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = if (showPermissionItems) Icons.Default.ExpandLess
+                        else Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
 
             if (showPermissionItems) {

@@ -16,11 +16,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -159,12 +163,19 @@ fun DebtorInfoScreen(
                     contentColor = Color.White
                 )
             ) {
-                Text(
-                    text = if (isExpanded) "Hide Details" else "Show Details",
-                    fontWeight = FontWeight.ExtraBold
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(if (isExpanded) "^" else "v", fontWeight = FontWeight.Bold)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = if (isExpanded) "Hide Details" else "Show Details",
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Icon(
+                        imageVector = if (isExpanded) Icons.Default.ExpandLess
+                        else Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
         Text(
