@@ -1,5 +1,6 @@
 package com.example.intern_stockmate.ui.configuration
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -23,7 +24,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MenuBook
@@ -35,6 +35,7 @@ import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
@@ -50,7 +51,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -98,6 +98,7 @@ fun ConfigScreen(
     val enabledStockAccessRoutes by configurationViewModel.enabledStockAccessRoutes.collectAsState()
     var adminPassword by remember(savedAdminPassword) { mutableStateOf(savedAdminPassword) }
     var stockPassword by remember(savedStockPassword) { mutableStateOf(savedStockPassword) }
+    var showPermissionItems by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
@@ -212,22 +213,43 @@ fun ConfigScreen(
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
-            StockAccessRights.configurableRights.forEach { option ->
-                PermissionItem(
-                    title = option.title,
-                    subtitle = option.subtitle,
-                    isEnabled = enabledStockAccessRoutes.contains(option.route),
-                    onCheckedChange = { enabled ->
-                        val result = configurationViewModel.updateStockAccessRight(option.route, enabled)
-                        if (result.isFailure) {
-                            Toast.makeText(
-                                context,
-                                result.exceptionOrNull()?.message ?: "Unable to update access right",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
+            OutlinedButton(
+                onClick = { showPermissionItems = !showPermissionItems },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color(0xFFEF3636)
+                ),
+                border = BorderStroke(1.dp, Color(0xFFEF3636))
+            ) {
+                Text(
+                    text = if (showPermissionItems) "Hide Stock Access" else "Show All Stock Access",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold
                 )
+            }
+
+            if (showPermissionItems) {
+                Spacer(modifier = Modifier.height(12.dp))
+                StockAccessRights.configurableRights.forEach { option ->
+                    PermissionItem(
+                        title = option.title,
+                        subtitle = option.subtitle,
+                        isEnabled = enabledStockAccessRoutes.contains(option.route),
+                        onCheckedChange = { enabled ->
+                            val result = configurationViewModel.updateStockAccessRight(option.route, enabled)
+                            if (result.isFailure) {
+                                Toast.makeText(
+                                    context,
+                                    result.exceptionOrNull()?.message ?: "Unable to update access right",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    )
+                }
             }
         }
 
