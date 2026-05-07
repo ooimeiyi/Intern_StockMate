@@ -196,16 +196,6 @@ fun ConfigScreen(
             }
         }
 
-        ManagementCard(title = "Account Book", icon = Icons.Default.MenuBook) {
-            Text(
-                text = if (selectedAccountBookId.isBlank()) "No account book selected"
-                else selectedAccountBookId,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.Black
-            )
-        }
-
         ManagementCard(title = "Stock Access Rights", icon = Icons.Default.Settings) {
             Text(
                 text = "When a user logs in with the 'stock' profile, they only have access to Stock List, Stock Take, and Sales Order by default. You can enable additional modules for them below: ",
