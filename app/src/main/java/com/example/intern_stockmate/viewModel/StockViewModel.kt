@@ -1,17 +1,19 @@
 package com.example.intern_stockmate.viewModel
 
+import android.app.Application
 import android.util.Log
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.example.intern_stockmate.data.CompanyContext
+import com.example.intern_stockmate.data.local.ApiConfigDatabase
+import com.example.intern_stockmate.data.local.ApiConfigEntity
 import com.example.intern_stockmate.model.LocationInfo
 import com.example.intern_stockmate.model.StockItem
 import com.example.intern_stockmate.model.UomInfo
 import com.example.intern_stockmate.model.UomLocationInfo
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -19,12 +21,18 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
+import java.net.HttpURLConnection
+import java.net.URL
 
 class StockViewModel(
-    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance(),
-    private val storage: FirebaseStorage = FirebaseStorage.getInstance()
-) : ViewModel() {
+    application: Application
+) : AndroidViewModel(application) {
     private val gson = Gson()
+    private val apiConfigDao = ApiConfigDatabase.getInstance(application).apiConfigDao()
 
     private val _allItems = MutableStateFlow<List<StockItem>>(emptyList())
     val allItems: StateFlow<List<StockItem>> = _allItems.asStateFlow()
@@ -44,6 +52,8 @@ class StockViewModel(
     val stockState: StateFlow<StockUiState> = _stockState.asStateFlow()
     private val _stockLastUpdate = MutableStateFlow("")
     val stockLastUpdate: StateFlow<String> = _stockLastUpdate.asStateFlow()
+    private val _syncStatusMessage = MutableStateFlow<String?>(null)
+    val syncStatusMessage: StateFlow<String?> = _syncStatusMessage.asStateFlow()
 
     val filteredItems: StateFlow<List<StockItem>> = combine(
         _allItems,
@@ -95,64 +105,81 @@ class StockViewModel(
 
     fun getStockList() {
         _stockState.value = StockUiState.Loading
-
-        CompanyContext.collection(firestore, COLLECTION_NAME)
-            .document(METADATA_DOCUMENT_ID)
-            .get()
-            .addOnSuccessListener { metadataDocument ->
-                if (!metadataDocument.exists()) {
-                    clearStockData()
-                    _stockState.value = StockUiState.Error("Stock list was not found.")
-                    return@addOnSuccessListener
-                }
-
-                val storagePath = metadataDocument.getString("storagePath").orEmpty().trim()
-                if (storagePath.isBlank()) {
-                    clearStockData()
-                    _stockState.value = StockUiState.Error("Stock list is missing storagePath.")
-                    return@addOnSuccessListener
-                }
-
-                storage.reference.child(storagePath)
-                    .getBytes(MAX_STOCK_JSON_SIZE_BYTES)
-                    .addOnSuccessListener { bytes ->
-                        val json = bytes.toString(Charsets.UTF_8)
-                        val parsedPayload = parseStockPayload(json)
-                        val parsed = parsedPayload.items
-
-                        if (parsed.isEmpty()) {
-                            clearStockData()
-                            _stockState.value = StockUiState.Error("Stock list JSON is empty or invalid.")
-                            return@addOnSuccessListener
-                        }
-
-                        _stockLastUpdate.value = parsedPayload.lastUpdate
-                        _allItems.value = parsed
-                        _locations.value = parsed
-                            .flatMap { item -> item.locationList.map { it.location } }
-                            .filter { it.isNotBlank() }
-                            .distinct()
-                            .sorted()
-                        if (_selectedLocation.value.isNotBlank() && _selectedLocation.value !in _locations.value) {
-                            _selectedLocation.value = ""
-                        }
-                        _stockState.value = StockUiState.Success(parsed)
-                    }
-                    .addOnFailureListener { error ->
-                        Log.e(TAG, "Failed to download stock JSON from Storage path: $storagePath", error)
-                        clearStockData()
-                        _stockState.value = StockUiState.Error(
-                            error.message ?: "Failed to download stock list JSON from Firebase Storage."
-                        )
-                    }
-            }
-            .addOnFailureListener { error ->
-                Log.e(TAG, "Failed to load stock list", error)
+        viewModelScope.launch(Dispatchers.IO) {
+            val config = apiConfigDao.getConfig()
+            val cachedJson = config?.stockJson.orEmpty()
+            if (cachedJson.isBlank()) {
                 clearStockData()
-                _stockState.value = StockUiState.Error(
-                    error.message ?: "Failed to load stock list from Firestore."
-                )
+                _stockState.value = StockUiState.Error("No local stock data. Please sync from API.")
+                return@launch
             }
+
+            val parsedPayload = parseStockPayload(cachedJson)
+            val effectiveLastUpdate = parsedPayload.lastUpdate.ifBlank { config?.stockLastUpdate.orEmpty() }
+            applyParsedStock(parsedPayload, effectiveLastUpdate)
+        }
+    }
+
+    fun syncStockListFromApi() {
+        val currentItems = _allItems.value
+        _stockState.value = StockUiState.Loading
+        viewModelScope.launch(Dispatchers.IO) {
+            val config = apiConfigDao.getConfig() ?: ApiConfigEntity()
+            var apiUrl = config.apiUrl.trim()
+            if (apiUrl.isBlank()) {
+                if (currentItems.isNotEmpty()) {
+                    _stockState.value = StockUiState.Success(currentItems)
+                    _syncStatusMessage.value = "API URL not set. Using previous data."
+                } else {
+                    _stockState.value = StockUiState.Error("API URL is empty. Set it in Config screen first.")
+                    _syncStatusMessage.value = "Sync failed: API URL is empty."
+                }
+                return@launch
+            }
+            if (!apiUrl.startsWith("http://") && !apiUrl.startsWith("https://")) {
+                apiUrl = "http://$apiUrl"
+            }
+
+            runCatching {
+                fetchStockJson(apiUrl)
+            }.onSuccess { json ->
+                val parsedPayload = parseStockPayload(json)
+                val effectiveLastUpdate = parsedPayload.lastUpdate
+                if (parsedPayload.items.isEmpty()) {
+                    _stockState.value = StockUiState.Error("Stock list JSON is empty or invalid.")
+                    _syncStatusMessage.value = "Sync failed: stock data is empty or invalid."
+                    if (currentItems.isNotEmpty()) {
+                        _stockState.value = StockUiState.Success(currentItems)
+                    }
+                    return@onSuccess
+                }
+
+                apiConfigDao.upsertConfig(
+                    config.copy(
+                        apiUrl = apiUrl,
+                        stockJson = json,
+                        stockLastUpdate = effectiveLastUpdate
+                    )
+                )
+                applyParsedStock(parsedPayload, effectiveLastUpdate)
+                _syncStatusMessage.value = "Sync success. Total items: ${parsedPayload.items.size}"
+            }.onFailure { error ->
+                Log.e(TAG, "Failed to sync stock list from API", error)
+                if (currentItems.isNotEmpty()) {
+                    _stockState.value = StockUiState.Success(currentItems)
+                    _syncStatusMessage.value = "Fail to connect API. Using previous local data."
+                } else {
+                    _stockState.value = StockUiState.Error(
+                        error.message ?: "Failed to sync stock list from API."
+                    )
+                    _syncStatusMessage.value = "Fail to connect API."
+                }
+            }
+        }
+    }
+
+    fun clearSyncStatusMessage() {
+        _syncStatusMessage.value = null
     }
 
     private fun parseStockPayload(json: String): ParsedStockPayload =
@@ -186,6 +213,69 @@ class StockViewModel(
         _locations.value = emptyList()
         _selectedLocation.value = ""
         _stockLastUpdate.value = ""
+    }
+
+    private fun applyParsedStock(parsedPayload: ParsedStockPayload, lastUpdate: String) {
+        val parsed = parsedPayload.items
+        if (parsed.isEmpty()) {
+            clearStockData()
+            _stockState.value = StockUiState.Error("Stock list JSON is empty or invalid.")
+            return
+        }
+
+        _stockLastUpdate.value = formatLastUpdate(lastUpdate)
+        _allItems.value = parsed
+        _locations.value = parsed
+            .flatMap { item -> item.locationList.map { it.location } }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .sorted()
+        if (_selectedLocation.value.isNotBlank() && _selectedLocation.value !in _locations.value) {
+            _selectedLocation.value = ""
+        }
+        _stockState.value = StockUiState.Success(parsed)
+    }
+
+    private fun formatLastUpdate(raw: String): String {
+        val trimmed = raw.trim()
+        if (trimmed.isBlank()) return ""
+
+        val inputFormats = listOf(
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
+        )
+        val outputFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")
+
+        for (input in inputFormats) {
+            try {
+                val dateTime = LocalDateTime.parse(trimmed, input)
+                return dateTime.format(outputFormat)
+            } catch (_: DateTimeParseException) {
+                // try next
+            }
+        }
+        return trimmed
+    }
+
+    private suspend fun fetchStockJson(apiUrl: String): String = withContext(Dispatchers.IO) {
+        val connection = (URL(apiUrl).openConnection() as HttpURLConnection).apply {
+            requestMethod = "GET"
+            connectTimeout = 15000
+            readTimeout = 15000
+            instanceFollowRedirects = true
+            setRequestProperty("Accept", "application/json")
+            setRequestProperty("User-Agent", "InternStockMate/1.0 (Android)")
+        }
+        try {
+            val responseCode = connection.responseCode
+            if (responseCode !in 200..299) {
+                val errorBody = connection.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
+                throw IllegalStateException("HTTP $responseCode ${errorBody.take(120)}".trim())
+            }
+            connection.inputStream.bufferedReader().use { it.readText() }
+        } finally {
+            connection.disconnect()
+        }
     }
 
     private fun Map<*, *>.toStockItem(fallbackId: String = ""): StockItem {
@@ -290,9 +380,6 @@ class StockViewModel(
 
     private companion object {
         const val TAG = "StockViewModel"
-        const val COLLECTION_NAME = "StockList"
-        const val METADATA_DOCUMENT_ID = "Metadata"
-        const val MAX_STOCK_JSON_SIZE_BYTES = 25L * 1024L * 1024L
     }
 }
 

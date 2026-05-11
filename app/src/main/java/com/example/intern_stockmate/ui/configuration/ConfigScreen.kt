@@ -1,5 +1,6 @@
 package com.example.intern_stockmate.ui.configuration
 
+import android.Manifest
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -31,10 +32,14 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.ui.platform.LocalContext
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
@@ -53,6 +58,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -75,7 +81,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.intern_stockmate.viewModel.CompanyListUiState
 import com.example.intern_stockmate.model.StockAccessRights
+import com.example.intern_stockmate.scanner.QRCodeScanner
 import com.example.intern_stockmate.viewModel.ConfigurationViewModel
+import com.example.intern_stockmate.viewModel.StockViewModel
 import kotlinx.coroutines.CoroutineScope
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -86,6 +94,7 @@ fun ConfigScreen(
     scope: CoroutineScope
 ) {
     val configurationViewModel: ConfigurationViewModel = viewModel()
+    val stockViewModel: StockViewModel = viewModel()
     val companyListState by configurationViewModel.companyListState.collectAsState()
     val selectedCompanyId by configurationViewModel.selectedCompanyId.collectAsState()
     val selectedAccountBookId by AccountBookContext.selectedAccountBookId.collectAsState()
@@ -101,9 +110,28 @@ fun ConfigScreen(
     var adminPassword by remember(savedAdminPassword) { mutableStateOf(savedAdminPassword) }
     var stockPassword by remember(savedStockPassword) { mutableStateOf(savedStockPassword) }
     var showPermissionItems by remember { mutableStateOf(false) }
+    val savedApiUrl by configurationViewModel.apiUrl.collectAsState()
+    val syncStatusMessage by stockViewModel.syncStatusMessage.collectAsState()
+    var apiUrl by remember(savedApiUrl) { mutableStateOf(savedApiUrl) }
+    var scanning by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        scanning = granted
+        if (!granted) {
+            Toast.makeText(context, "Permission Denied", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    LaunchedEffect(syncStatusMessage) {
+        syncStatusMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            stockViewModel.clearSyncStatusMessage()
+        }
+    }
 
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
@@ -250,6 +278,86 @@ fun ConfigScreen(
                                 ).show()
                             }
                         }
+                    )
+                }
+            }
+        }
+
+        ManagementCard(title = "API URL", icon = Icons.Default.MenuBook) {
+            Text(
+                text = "Set your API URL or scan a QR code to sync data.",
+                fontSize = 14.sp,
+                color = Color.Gray,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = apiUrl,
+                    onValueChange = { apiUrl = it },
+                    placeholder = { Text("https://your-api-url.com", color = Color.LightGray) },
+                    modifier = Modifier.weight(1f),
+                    colors = textFieldColors,
+                    shape = RoundedCornerShape(8.dp),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
+                )
+
+                Button(
+                    onClick = { cameraPermissionLauncher.launch(Manifest.permission.CAMERA) },
+                    modifier = Modifier.size(56.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF3636)),
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.QrCodeScanner,
+                        contentDescription = "Scan API URL",
+                        tint = Color.White,
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = {
+                    val result = configurationViewModel.syncApiUrl(apiUrl)
+                    if (result.isSuccess) {
+                        Toast.makeText(context, "API URL saved. Syncing stock...", Toast.LENGTH_SHORT).show()
+                        stockViewModel.syncStockListFromApi()
+                    } else {
+                        Toast.makeText(
+                            context,
+                            result.exceptionOrNull()?.message ?: "Unable to sync API URL",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF3636))
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Sync,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Sync API URL",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
                 }
             }
@@ -436,6 +544,17 @@ fun ConfigScreen(
 
             }
         }
+    }
+
+    if (scanning) {
+        QRCodeScanner(
+            scanning = scanning,
+            onResult = { scannedValue ->
+                apiUrl = scannedValue.trim()
+                scanning = false
+            },
+            onScanFinished = { scanning = false }
+        )
     }
 }
 

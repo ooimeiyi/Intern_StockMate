@@ -2,10 +2,13 @@ package com.example.intern_stockmate.viewModel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.intern_stockmate.data.AccountBookContext
 import com.example.intern_stockmate.data.AccessPasswordStore
 import com.example.intern_stockmate.data.CompanyContext
 import com.example.intern_stockmate.data.DocumentNumberFormatStore
+import com.example.intern_stockmate.data.local.ApiConfigDatabase
+import com.example.intern_stockmate.data.local.ApiConfigEntity
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -13,9 +16,11 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.QuerySnapshot
 import com.example.intern_stockmate.model.StockAccessRights
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 data class CompanyOption(
     val id: String,
@@ -31,6 +36,7 @@ sealed interface CompanyListUiState {
 class ConfigurationViewModel(application: Application) : AndroidViewModel(application) {
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val apiConfigDao = ApiConfigDatabase.getInstance(application).apiConfigDao()
 
     private val _companyListState = MutableStateFlow<CompanyListUiState>(CompanyListUiState.Loading)
     val companyListState: StateFlow<CompanyListUiState> = _companyListState.asStateFlow()
@@ -44,6 +50,8 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
 
     private val _enabledStockAccessRoutes = MutableStateFlow<Set<String>>(emptySet())
     val enabledStockAccessRoutes: StateFlow<Set<String>> = _enabledStockAccessRoutes.asStateFlow()
+    private val _apiUrl = MutableStateFlow("")
+    val apiUrl: StateFlow<String> = _apiUrl.asStateFlow()
 
     private var companiesListener: ListenerRegistration? = null
     private var userAccessListener: ListenerRegistration? = null
@@ -57,6 +65,9 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
         auth.addAuthStateListener(authStateListener)
         observeLoggedInUserPermissions(auth.currentUser?.email)
         observeCompanies()
+        viewModelScope.launch(Dispatchers.IO) {
+            _apiUrl.value = apiConfigDao.getConfig()?.apiUrl.orEmpty()
+        }
     }
 
     private fun observeCompanies() {
@@ -321,6 +332,23 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
             _enabledStockAccessRoutes.value + route
         } else {
             _enabledStockAccessRoutes.value - route
+        }
+        return Result.success(Unit)
+    }
+
+    fun syncApiUrl(apiUrl: String): Result<Unit> {
+        var normalizedUrl = apiUrl.trim()
+        if (normalizedUrl.isBlank()) {
+            return Result.failure(IllegalArgumentException("API URL cannot be empty"))
+        }
+        if (!normalizedUrl.startsWith("http://") && !normalizedUrl.startsWith("https://")) {
+            normalizedUrl = "http://$normalizedUrl"
+        }
+
+        _apiUrl.value = normalizedUrl
+        viewModelScope.launch(Dispatchers.IO) {
+            val current = apiConfigDao.getConfig() ?: ApiConfigEntity()
+            apiConfigDao.upsertConfig(current.copy(apiUrl = normalizedUrl))
         }
         return Result.success(Unit)
     }

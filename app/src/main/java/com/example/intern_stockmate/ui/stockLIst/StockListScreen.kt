@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -78,11 +79,19 @@ fun StockListScreenContainer(
     val isInvalidSearch by viewModel.isInvalidSearch.collectAsState()
     val filteredItems by viewModel.filteredItems.collectAsState()
     val stockLastUpdate by viewModel.stockLastUpdate.collectAsState()
+    val syncStatusMessage by viewModel.syncStatusMessage.collectAsState()
+    val context = LocalContext.current
 
     val focusManager = LocalFocusManager.current
 
     LaunchedEffect(Unit) {
         viewModel.getStockList()
+    }
+    LaunchedEffect(syncStatusMessage) {
+        syncStatusMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            viewModel.clearSyncStatusMessage()
+        }
     }
 
     Box(
@@ -104,7 +113,8 @@ fun StockListScreenContainer(
             searchQuery = searchQuery,
             isInvalidSearch = isInvalidSearch,
             stockLastUpdate = stockLastUpdate,
-            onSearchQueryChange = { viewModel.onSearchQueryChange(it) }
+            onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
+            onSyncClick = { viewModel.syncStockListFromApi() }
         )
 
         if (state is StockUiState.Error) {
@@ -151,7 +161,8 @@ fun StockListScreen(
     searchQuery: String,
     isInvalidSearch: Boolean,
     stockLastUpdate: String,
-    onSearchQueryChange: (String) -> Unit
+    onSearchQueryChange: (String) -> Unit,
+    onSyncClick: () -> Unit
 ) {
     val context = LocalContext.current
     var localQuery by remember { mutableStateOf(searchQuery) }
@@ -233,32 +244,53 @@ fun StockListScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                if (stockLastUpdate.isNotBlank()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                color = Color(0xFFE8F0FE),
-                                shape = RoundedCornerShape(8.dp)
-                            )
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Start
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AccessTime,
-                            contentDescription = null,
-                            tint = Color(0xFF1A73E8),
-                            modifier = Modifier.size(18.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = Color(0xFFE8F0FE),
+                            shape = RoundedCornerShape(8.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Last Synced: $stockLastUpdate",
-                            color = Color(0xFF1A73E8),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AccessTime,
+                        contentDescription = null,
+                        tint = Color(0xFF1A73E8),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Last Synced: ${if (stockLastUpdate.isBlank()) "-" else stockLastUpdate}",
+                        color = Color(0xFF1A73E8),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Button(
+                    onClick = onSyncClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF3636))
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Sync,
+                        contentDescription = null,
+                        tint = Color.White
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Sync Latest Stock",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
