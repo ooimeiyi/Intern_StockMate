@@ -161,7 +161,7 @@ fun LogInScreen(
 
                     Button(
                         onClick = {
-                            loginViewModel.attemptLogin { success ->
+                            loginViewModel.attemptLogin(context) { success ->
                                 if (success) {
                                     onLoginSuccess()
                                 }

@@ -1,5 +1,6 @@
 package com.example.intern_stockmate.viewModel
 
+import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -8,6 +9,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.EmailAuthProvider
 import androidx.lifecycle.viewModelScope
+import com.example.intern_stockmate.data.AccessPasswordStore
 import com.example.intern_stockmate.data.local.UserCredentialDao
 import com.example.intern_stockmate.data.local.UserCredentialEntity
 import com.google.firebase.auth.FirebaseAuth
@@ -80,7 +82,7 @@ class LoginViewModel(
     val isLoginEnabled: Boolean
         get() = inputUserId.isNotBlank() && inputPassword.isNotBlank()
 
-    fun attemptLogin(onResult: (Boolean) -> Unit) {
+    fun attemptLogin(context: Context, onResult: (Boolean) -> Unit) {
         val email = inputUserId.trim()
         val password = inputPassword
         if (email.isBlank() || password.isBlank()) {
@@ -105,6 +107,7 @@ class LoginViewModel(
                             )
                         )
                     }
+                    syncAccessPasswordsFromFirebase(context)
                     onResult(true)
                 } else {
                     loginError = true
@@ -117,6 +120,24 @@ class LoginViewModel(
                 }
             }
 
+    }
+
+    private fun syncAccessPasswordsFromFirebase(context: Context) {
+        val email = auth.currentUser?.email?.trim().orEmpty()
+        if (email.isBlank()) return
+
+        firestore.collection(USERS_COLLECTION)
+            .document(email)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val loginPasswordData = snapshot.get(LOGIN_PASSWORD_FIELD) as? Map<*, *> ?: return@addOnSuccessListener
+                val adminPassword = loginPasswordData[ADMIN_PASSWORD_FIELD]?.toString()?.trim().orEmpty()
+                val stockPassword = loginPasswordData[STOCK_USER_PASSWORD_FIELD]?.toString()?.trim().orEmpty()
+
+                if (adminPassword.isNotBlank() && stockPassword.isNotBlank()) {
+                    AccessPasswordStore.updatePasswords(context, adminPassword, stockPassword)
+                }
+            }
     }
 
     fun fetchSavedAccountBook(
@@ -146,6 +167,9 @@ class LoginViewModel(
     private companion object {
         const val USERS_COLLECTION = "Users"
         const val ACCOUNT_BOOK_FIELD = "AccountBook"
+        const val LOGIN_PASSWORD_FIELD = "LoginPassword"
+        const val ADMIN_PASSWORD_FIELD = "Admin"
+        const val STOCK_USER_PASSWORD_FIELD = "StockUser"
     }
 }
 

@@ -390,19 +390,19 @@ fun ConfigScreen(
 
             Button(
                 onClick = {
-                    val result = configurationViewModel.saveAccessPasswords(
+                    configurationViewModel.saveAccessPasswords(
                         adminPassword = adminPassword,
                         stockPassword = stockPassword
-                    )
-
-                    if (result.isSuccess) {
-                        Toast.makeText(context, "Passwords Saved", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(
-                            context,
-                            result.exceptionOrNull()?.message ?: "Unable to save passwords",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                    ) { result ->
+                        if (result.isSuccess) {
+                            Toast.makeText(context, "Passwords Saved", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(
+                                context,
+                                result.exceptionOrNull()?.message ?: "Unable to save passwords",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     }
                 },
                 modifier = Modifier

@@ -275,30 +275,60 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
         return Result.success(Unit)
     }
 
-    fun saveAccessPasswords(adminPassword: String, stockPassword: String): Result<Unit> {
+    fun saveAccessPasswords(
+        adminPassword: String,
+        stockPassword: String,
+        onComplete: (Result<Unit>) -> Unit
+    ) {
         val normalizedAdmin = adminPassword.trim()
         val normalizedStock = stockPassword.trim()
 
         if (normalizedAdmin.isBlank()) {
-            return Result.failure(IllegalArgumentException("Admin password cannot be empty"))
+            onComplete(Result.failure(IllegalArgumentException("Admin password cannot be empty")))
+            return
         }
 
         if (normalizedStock.isBlank()) {
-            return Result.failure(IllegalArgumentException("Stock password cannot be empty"))
+            onComplete(Result.failure(IllegalArgumentException("Stock password cannot be empty")))
+            return
         }
 
         if (normalizedAdmin == normalizedStock) {
-            return Result.failure(
-                IllegalArgumentException("Admin password and Stock User password cannot be same")
+            onComplete(
+                Result.failure(
+                    IllegalArgumentException("Admin password and Stock User password cannot be same")
+                )
             )
+            return
         }
 
-        AccessPasswordStore.updatePasswords(
-            context = getApplication(),
-            adminPassword = normalizedAdmin,
-            stockPassword = normalizedStock
+        val email = auth.currentUser?.email?.trim().orEmpty()
+        if (email.isBlank()) {
+            onComplete(Result.failure(IllegalStateException("Please log in to save passwords")))
+            return
+        }
+
+        val loginPasswordPayload = mapOf(
+            "Admin" to normalizedAdmin,
+            "StockUser" to normalizedStock
         )
-        return Result.success(Unit)
+        firestore.collection(USERS_COLLECTION)
+            .document(email)
+            .set(
+                mapOf(LOGIN_PASSWORD_FIELD to loginPasswordPayload),
+                com.google.firebase.firestore.SetOptions.merge()
+            )
+            .addOnSuccessListener {
+                AccessPasswordStore.updatePasswords(
+                    context = getApplication(),
+                    adminPassword = normalizedAdmin,
+                    stockPassword = normalizedStock
+                )
+                onComplete(Result.success(Unit))
+            }
+            .addOnFailureListener { error ->
+                onComplete(Result.failure(error))
+            }
     }
 
     fun updateStockAccessRight(route: String, enabled: Boolean): Result<Unit> {
@@ -369,6 +399,7 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
         const val COMPANIES_COLLECTION = "Companies"
         const val USERS_COLLECTION = "Users"
         const val STOCK_ACCESS_RIGHTS_FIELD = "StockAccessRights"
+        const val LOGIN_PASSWORD_FIELD = "LoginPassword"
         val COMPANY_SUBCOLLECTION_HINTS = listOf(
             "CreditorSummary",
             "DebtorSummary",
