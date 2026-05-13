@@ -7,6 +7,8 @@ import androidx.compose.material.icons.filled.BusinessCenter
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.SyncAlt
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -21,13 +23,27 @@ object StockAccessRights {
     val defaultAllowedRoutes: Set<String> = setOf(
         HamburgerScreen.Dashboard.route,
         HamburgerScreen.StockList.route,
-        HamburgerScreen.SalesOrder.route,
         "salesOrderDetails",
-        HamburgerScreen.StockTake.route,
         "adjustmentDetails"
     )
 
     val configurableRights: List<StockAccessRightOption> = listOf(
+        StockAccessRightOption(
+            route = HamburgerScreen.StockTake.route,
+            remoteKey = "StockTake",
+            title = "Stock Take",
+            subtitle = "Allow stock staff to access stock take / stock adjustment.",
+            icon = Icons.Default.SyncAlt,
+            defaultEnabled = true
+        ),
+        StockAccessRightOption(
+            route = HamburgerScreen.SalesOrder.route,
+            remoteKey = "SalesOrder",
+            title = "Sales Order",
+            subtitle = "Allow stock staff to create and manage sales orders.",
+            icon = Icons.Default.ShoppingCart,
+            defaultEnabled = true
+        ),
         StockAccessRightOption(
             route = HamburgerScreen.SalesOverview.route,
             remoteKey = "SalesOverview",
@@ -122,6 +138,11 @@ object StockAccessRights {
     fun remoteKeyForRoute(route: String): String =
         configurableRights.firstOrNull { it.route == route }?.remoteKey ?: route
 
+    val defaultEnabledConfigurableRoutes: Set<String> = configurableRights
+        .filter { it.defaultEnabled }
+        .map { it.route }
+        .toSet()
+
     fun stockAllowedRoutesFromRemote(enabledRoutes: Set<String>): Set<String> {
         val safeEnabled = enabledRoutes.intersect(configurableRights.map { it.route }.toSet())
         return defaultAllowedRoutes + safeEnabled
@@ -133,5 +154,6 @@ data class StockAccessRightOption(
     val remoteKey: String = route,
     val title: String,
     val subtitle: String,
-    val icon: ImageVector
+    val icon: ImageVector,
+    val defaultEnabled: Boolean = false
 )

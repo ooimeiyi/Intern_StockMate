@@ -150,14 +150,21 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
                 allowedCompanyIds = allowed
 
                 val rightsMap = snapshot?.get(STOCK_ACCESS_RIGHTS_FIELD) as? Map<*, *>
-                val enabledRoutes = rightsMap
+                val remoteRightsByRoute = rightsMap
                     ?.mapNotNull { (key, value) ->
                         val route = (key as? String)?.let(StockAccessRights::routeFromRemoteKey)
                         val enabled = value as? Boolean
-                        if (route != null && enabled == true) route else null
+                        if (route != null && enabled != null) route to enabled else null
                     }
-                    ?.toSet()
+                    ?.toMap()
                     .orEmpty()
+
+                val enabledRoutes = StockAccessRights.configurableRights
+                    .filter { option ->
+                        remoteRightsByRoute[option.route] ?: option.defaultEnabled
+                    }
+                    .map { it.route }
+                    .toSet()
 
                 _enabledStockAccessRoutes.value = enabledRoutes
                 publishAccessibleCompanies()
@@ -304,7 +311,7 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
             return Result.failure(IllegalArgumentException("Invalid route: $route"))
         }
 
-        val updateValue: Any = if (enabled) true else FieldValue.delete()
+        val updateValue: Any = enabled
         val remoteKey = StockAccessRights.remoteKeyForRoute(route)
         val updates = mutableMapOf<String, Any>(
             "$STOCK_ACCESS_RIGHTS_FIELD.$remoteKey" to updateValue
@@ -317,13 +324,9 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
             .update(updates as Map<String, Any>)
             .addOnFailureListener { error ->
                 if (error.message?.contains("No document to update", ignoreCase = true) == true) {
-                    val initialValue = if (enabled) true else null
+                    val initialValue = enabled
                     val payload = mutableMapOf<String, Any>()
-                    payload[STOCK_ACCESS_RIGHTS_FIELD] = if (initialValue == null) {
-                        emptyMap<String, Any>()
-                    } else {
-                        mapOf(remoteKey to initialValue)
-                    }
+                    payload[STOCK_ACCESS_RIGHTS_FIELD] = mapOf(remoteKey to initialValue)
                     firestore.collection(USERS_COLLECTION).document(email).set(payload, com.google.firebase.firestore.SetOptions.merge())
                 }
             }
