@@ -36,6 +36,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -80,6 +81,8 @@ fun StockListScreenContainer(
     val filteredItems by viewModel.filteredItems.collectAsState()
     val stockLastUpdate by viewModel.stockLastUpdate.collectAsState()
     val syncStatusMessage by viewModel.syncStatusMessage.collectAsState()
+    val isRemoteSyncing by viewModel.isRemoteSyncing.collectAsState()
+    val syncCooldownRemainingMs by viewModel.syncCooldownRemainingMs.collectAsState()
     val context = LocalContext.current
 
     val focusManager = LocalFocusManager.current
@@ -114,7 +117,16 @@ fun StockListScreenContainer(
             isInvalidSearch = isInvalidSearch,
             stockLastUpdate = stockLastUpdate,
             onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
-            onSyncClick = { viewModel.syncStockListFromApi() }
+            onSyncClick = {
+                if (syncCooldownRemainingMs > 0L) {
+                    val remainingSeconds = (syncCooldownRemainingMs + 999L) / 1000L
+                    Toast.makeText(context, "Please wait ${remainingSeconds}s", Toast.LENGTH_SHORT).show()
+                } else {
+                    viewModel.requestRemoteSync()
+                }
+            },
+            isSyncButtonEnabled = true,
+            syncButtonLabel = "Sync Latest Stock"
         )
 
         if (state is StockUiState.Error) {
@@ -135,19 +147,23 @@ fun StockListScreenContainer(
             }
         }
 
-        if (state is StockUiState.Loading) {
+        if (state is StockUiState.Loading || isRemoteSyncing) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.White.copy(alpha = 0.6f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    "Loading...",
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black,
-                    fontSize = 16.sp
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(color = Color(0xFF1A73E8))
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        if (isRemoteSyncing) "Syncing with server..." else "Loading...",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black,
+                        fontSize = 16.sp
+                    )
+                }
             }
         }
     }
@@ -162,7 +178,9 @@ fun StockListScreen(
     isInvalidSearch: Boolean,
     stockLastUpdate: String,
     onSearchQueryChange: (String) -> Unit,
-    onSyncClick: () -> Unit
+    onSyncClick: () -> Unit,
+    isSyncButtonEnabled: Boolean,
+    syncButtonLabel: String
 ) {
     val context = LocalContext.current
     var localQuery by remember { mutableStateOf(searchQuery) }
@@ -274,6 +292,7 @@ fun StockListScreen(
 
                 Button(
                     onClick = onSyncClick,
+                    enabled = isSyncButtonEnabled,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(44.dp),
@@ -287,7 +306,7 @@ fun StockListScreen(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Sync Latest Stock",
+                        text = syncButtonLabel,
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )

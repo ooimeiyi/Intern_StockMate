@@ -22,6 +22,12 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.SetOptions
+import kotlinx.coroutines.tasks.await
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
@@ -33,6 +39,9 @@ class StockViewModel(
 ) : AndroidViewModel(application) {
     private val gson = Gson()
     private val apiConfigDao = ApiConfigDatabase.getInstance(application).apiConfigDao()
+    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private var remoteControlListener: ListenerRegistration? = null
+
 
     private val _allItems = MutableStateFlow<List<StockItem>>(emptyList())
     val allItems: StateFlow<List<StockItem>> = _allItems.asStateFlow()
@@ -54,6 +63,14 @@ class StockViewModel(
     val stockLastUpdate: StateFlow<String> = _stockLastUpdate.asStateFlow()
     private val _syncStatusMessage = MutableStateFlow<String?>(null)
     val syncStatusMessage: StateFlow<String?> = _syncStatusMessage.asStateFlow()
+
+    private val _isRemoteSyncing = MutableStateFlow(false)
+    val isRemoteSyncing: StateFlow<Boolean> = _isRemoteSyncing.asStateFlow()
+
+    private val _syncCooldownRemainingMs = MutableStateFlow(0L)
+    val syncCooldownRemainingMs: StateFlow<Long> = _syncCooldownRemainingMs.asStateFlow()
+    private var lastSyncRequestTimeMs: Long = 0L
+    private var cooldownJob: Job? = null
 
     val filteredItems: StateFlow<List<StockItem>> = combine(
         _allItems,
@@ -80,15 +97,23 @@ class StockViewModel(
         viewModelScope.launch {
             CompanyContext.selectedCompanyId.collect { companyId ->
                 if (companyId.isBlank()) {
+                    remoteControlListener?.remove()
+                    remoteControlListener = null
                     _allItems.value = emptyList()
                     _locations.value = emptyList()
                     _selectedLocation.value = ""
                     _stockState.value = StockUiState.Error("No company selected.")
                 } else {
+                    listenRemoteSyncCommand(companyId)
                     getStockList()
                 }
             }
         }
+    }
+    override fun onCleared() {
+        remoteControlListener?.remove()
+        remoteControlListener = null
+        super.onCleared()
     }
 
     fun onSearchQueryChange(query: String) {
@@ -177,6 +202,76 @@ class StockViewModel(
             }
         }
     }
+
+    fun requestRemoteSync() {
+        val companyId = CompanyContext.selectedCompanyId.value.trim()
+        if (companyId.isBlank()) {
+            _syncStatusMessage.value = "Please select a company first."
+            return
+        }
+
+        val now = System.currentTimeMillis()
+        val remaining = (SYNC_COOLDOWN_MS - (now - lastSyncRequestTimeMs)).coerceAtLeast(0L)
+        if (remaining > 0L) {
+            _syncCooldownRemainingMs.value = remaining
+            _syncStatusMessage.value = "Please wait ${remaining / 1000}s before next sync request."
+            return
+        }
+
+        lastSyncRequestTimeMs = now
+        _syncCooldownRemainingMs.value = 0L
+        startCooldownTimer()
+        viewModelScope.launch {
+            runCatching {
+                firestore.collection("Companies")
+                    .document(companyId)
+                    .collection("System")
+                    .document("RemoteControl")
+                    .set(mapOf("command" to REMOTE_COMMAND_REQUEST_SYNC), SetOptions.merge())
+                    .await()
+            }.onSuccess {
+                _syncStatusMessage.value = "Sync requested. Waiting for PC update"
+            }.onFailure { error ->
+                _syncStatusMessage.value = error.message ?: "Failed to request remote sync."
+            }
+        }
+    }
+
+    private fun startCooldownTimer() {
+        cooldownJob?.cancel()
+        cooldownJob = viewModelScope.launch {
+            while (true) {
+                val remaining = (SYNC_COOLDOWN_MS - (System.currentTimeMillis() - lastSyncRequestTimeMs))
+                    .coerceAtLeast(0L)
+                _syncCooldownRemainingMs.value = remaining
+                if (remaining <= 0L) break
+                delay(1000)
+            }
+        }
+    }
+
+    private fun listenRemoteSyncCommand(companyId: String) {
+        remoteControlListener?.remove()
+        remoteControlListener = firestore.collection("Companies")
+            .document(companyId)
+            .collection("System")
+            .document("RemoteControl")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e(TAG, "Failed to listen remote sync command", error)
+                    return@addSnapshotListener
+                }
+
+                val command = snapshot?.getString("command")?.trim().orEmpty()
+                _isRemoteSyncing.value = command.equals(REMOTE_COMMAND_SYNCING, ignoreCase = true)
+
+                if (command.equals(REMOTE_COMMAND_COMPLETED, ignoreCase = true)) {
+                    _syncStatusMessage.value = "Remote sync completed. Refreshing stock list..."
+                    syncStockListFromApi()
+                }
+            }
+    }
+
 
     fun clearSyncStatusMessage() {
         _syncStatusMessage.value = null
@@ -380,6 +475,10 @@ class StockViewModel(
 
     private companion object {
         const val TAG = "StockViewModel"
+        const val REMOTE_COMMAND_REQUEST_SYNC = "REQUEST_SYNC"
+        const val REMOTE_COMMAND_SYNCING = "SYNCING"
+        const val REMOTE_COMMAND_COMPLETED = "COMPLETED"
+        const val SYNC_COOLDOWN_MS = 60_000L
     }
 }
 
