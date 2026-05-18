@@ -122,7 +122,7 @@ fun StockListScreenContainer(
                     val remainingSeconds = (syncCooldownRemainingMs + 999L) / 1000L
                     Toast.makeText(context, "Please wait ${remainingSeconds}s", Toast.LENGTH_SHORT).show()
                 } else {
-                    viewModel.requestRemoteSync()
+                    viewModel.syncStockListFromApi()
                 }
             },
             isSyncButtonEnabled = true,

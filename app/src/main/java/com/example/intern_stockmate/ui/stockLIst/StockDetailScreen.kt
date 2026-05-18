@@ -52,6 +52,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import com.example.intern_stockmate.R
 import com.example.intern_stockmate.model.StockItem
@@ -84,17 +85,11 @@ fun StockDetailScreen(
                 .height(220.dp)
                 .background(Color.White)
         ) {
-            val painter = when {
-                selectedImageUri != null -> rememberAsyncImagePainter(selectedImageUri)
-                !item.itemPhoto.isNullOrBlank() -> {
-                    runCatching { base64ToBitmap(item.itemPhoto).asImageBitmap() }.getOrNull()
-                        ?.let { androidx.compose.ui.graphics.painter.BitmapPainter(it) }
-                        ?: painterResource(id = R.drawable.stock_mate_logo)
-                }
-                else -> painterResource(id = R.drawable.stock_mate_logo)
-            }
-            Image(
-                painter = painter,
+            val imageModel: Any = selectedImageUri ?: item.itemPhoto.orEmpty()
+            AsyncImage(
+                model = imageModel,
+                placeholder = painterResource(id = R.drawable.stock_mate_logo),
+                error = painterResource(id = R.drawable.stock_mate_logo),
                 contentDescription = null,
                 modifier = Modifier
                     .size(180.dp)

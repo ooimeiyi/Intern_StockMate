@@ -591,7 +591,7 @@ private fun PermissionItem(
 
                 checkedBorderColor = Color(0xFFEF3636),
                 uncheckedBorderColor = Color.LightGray
-        )
+            )
         )
     }
 }

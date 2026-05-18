@@ -27,6 +27,7 @@ import kotlinx.coroutines.delay
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.SetOptions
+import com.google.gson.JsonParser
 import kotlinx.coroutines.tasks.await
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -131,6 +132,7 @@ class StockViewModel(
     fun getStockList() {
         _stockState.value = StockUiState.Loading
         viewModelScope.launch(Dispatchers.IO) {
+            refreshApiUrlFromFirebase()
             val config = apiConfigDao.getConfig()
             val cachedJson = config?.stockJson.orEmpty()
             if (cachedJson.isBlank()) {
@@ -149,6 +151,7 @@ class StockViewModel(
         val currentItems = _allItems.value
         _stockState.value = StockUiState.Loading
         viewModelScope.launch(Dispatchers.IO) {
+            refreshApiUrlFromFirebase()
             val config = apiConfigDao.getConfig() ?: ApiConfigEntity()
             var apiUrl = config.apiUrl.trim()
             if (apiUrl.isBlank()) {
@@ -161,12 +164,10 @@ class StockViewModel(
                 }
                 return@launch
             }
-            if (!apiUrl.startsWith("http://") && !apiUrl.startsWith("https://")) {
-                apiUrl = "http://$apiUrl"
-            }
+            apiUrl = apiUrl.ensureHttpScheme()
 
             runCatching {
-                fetchStockJson(apiUrl)
+                forceSyncAndFetchStockJson(apiUrl)
             }.onSuccess { json ->
                 val parsedPayload = parseStockPayload(json)
                 val effectiveLastUpdate = parsedPayload.lastUpdate
@@ -190,18 +191,53 @@ class StockViewModel(
                 _syncStatusMessage.value = "Sync success. Total items: ${parsedPayload.items.size}"
             }.onFailure { error ->
                 Log.e(TAG, "Failed to sync stock list from API", error)
+                val userFriendlyMessage = if (
+                    error.message?.contains("HTTP 503", ignoreCase = true) == true
+                ) {
+                    "Stock data is still being prepared on the server. Please try again."
+                } else {
+                    "Fail to connect API."
+                }
                 if (currentItems.isNotEmpty()) {
                     _stockState.value = StockUiState.Success(currentItems)
-                    _syncStatusMessage.value = "Fail to connect API. Using previous local data."
+                    _syncStatusMessage.value = if (userFriendlyMessage.startsWith("Stock data")) {
+                        "$userFriendlyMessage Using previous local data."
+                    } else {
+                        "Fail to connect API. Using previous local data."
+                    }
                 } else {
-                    _stockState.value = StockUiState.Error(
-                        error.message ?: "Failed to sync stock list from API."
-                    )
-                    _syncStatusMessage.value = "Fail to connect API."
+                    _stockState.value = StockUiState.Error(userFriendlyMessage)
+                    _syncStatusMessage.value = userFriendlyMessage
                 }
             }
         }
     }
+
+    private suspend fun refreshApiUrlFromFirebase() {
+        val companyId = CompanyContext.selectedCompanyId.value.trim()
+        if (companyId.isBlank()) return
+
+        runCatching {
+            val snapshot = firestore.collection("Companies")
+                .document(companyId)
+                .collection("System")
+                .document("ApiConfig")
+                .get()
+                .await()
+            snapshot.getString("current_api_url").orEmpty().trim()
+        }.onSuccess { remoteUrl ->
+            if (remoteUrl.isNotBlank()) {
+                val normalizedUrl = remoteUrl.ensureHttpScheme()
+                val currentConfig = apiConfigDao.getConfig() ?: ApiConfigEntity()
+                if (currentConfig.apiUrl != normalizedUrl) {
+                    apiConfigDao.upsertConfig(currentConfig.copy(apiUrl = normalizedUrl))
+                }
+            }
+        }.onFailure { error ->
+            Log.e(TAG, "Failed to refresh API URL from Firebase", error)
+        }
+    }
+
 
     fun requestRemoteSync() {
         val companyId = CompanyContext.selectedCompanyId.value.trim()
@@ -271,7 +307,6 @@ class StockViewModel(
                 }
             }
     }
-
 
     fun clearSyncStatusMessage() {
         _syncStatusMessage.value = null
@@ -352,8 +387,24 @@ class StockViewModel(
         return trimmed
     }
 
-    private suspend fun fetchStockJson(apiUrl: String): String = withContext(Dispatchers.IO) {
-        val connection = (URL(apiUrl).openConnection() as HttpURLConnection).apply {
+    private suspend fun forceSyncAndFetchStockJson(baseUrl: String): String {
+        val normalizedBaseUrl = baseUrl.trimEnd('/')
+        val forceSyncResponse = httpGet("$normalizedBaseUrl/api/forcesync/")
+        if (!isForceSyncSuccess(forceSyncResponse)) {
+            throw IllegalStateException("Force sync failed: $forceSyncResponse")
+        }
+        return httpGet("$normalizedBaseUrl/api/stocklist/")
+    }
+
+    private fun isForceSyncSuccess(response: String): Boolean {
+        return runCatching {
+            val json = JsonParser.parseString(response).asJsonObject
+            json.get("status")?.asString?.equals("success", ignoreCase = true) == true
+        }.getOrDefault(false)
+    }
+
+    private suspend fun httpGet(url: String): String = withContext(Dispatchers.IO) {
+        val connection = (URL(url).openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
             connectTimeout = 15000
             readTimeout = 15000
@@ -372,6 +423,9 @@ class StockViewModel(
             connection.disconnect()
         }
     }
+
+    private fun String.ensureHttpScheme(): String =
+        if (startsWith("http://") || startsWith("https://")) this else "http://$this"
 
     private fun Map<*, *>.toStockItem(fallbackId: String = ""): StockItem {
         val payload = this

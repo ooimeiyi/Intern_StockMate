@@ -20,6 +20,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 data class CompanyOption(
@@ -67,6 +68,11 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
         observeCompanies()
         viewModelScope.launch(Dispatchers.IO) {
             _apiUrl.value = apiConfigDao.getConfig()?.apiUrl.orEmpty()
+        }
+        viewModelScope.launch {
+            selectedCompanyId.collectLatest { companyId ->
+                refreshApiUrlFromCompany(companyId)
+            }
         }
     }
 
@@ -255,6 +261,47 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
         CompanyContext.updateSelectedCompany(getApplication(), companyId)
     }
 
+    private fun refreshApiUrlFromCompany(companyId: String) {
+        val normalizedCompanyId = companyId.trim()
+        if (normalizedCompanyId.isBlank()) {
+            return
+        }
+
+        firestore.collection(COMPANIES_COLLECTION)
+            .document(normalizedCompanyId)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val remoteApiUrl = listOf(
+                    snapshot.getString(CURRENT_API_URL_FIELD),
+                    snapshot.getString("currentApiUrl"),
+                    snapshot.getString("api_url"),
+                    snapshot.getString("apiUrl")
+                )
+                    .firstOrNull { !it.isNullOrBlank() }
+                    ?.trim()
+                    .orEmpty()
+
+                if (remoteApiUrl.isBlank()) {
+                    return@addOnSuccessListener
+                }
+
+                var normalizedUrl = remoteApiUrl
+                if (!normalizedUrl.startsWith("http://") && !normalizedUrl.startsWith("https://")) {
+                    normalizedUrl = "http://$normalizedUrl"
+                }
+
+                if (_apiUrl.value == normalizedUrl) {
+                    return@addOnSuccessListener
+                }
+
+                _apiUrl.value = normalizedUrl
+                viewModelScope.launch(Dispatchers.IO) {
+                    val current = apiConfigDao.getConfig() ?: ApiConfigEntity()
+                    apiConfigDao.upsertConfig(current.copy(apiUrl = normalizedUrl))
+                }
+            }
+    }
+
     fun saveDocumentFormats(salesOrderFormat: String, stockAdjustmentFormat: String): Result<Unit> {
         val normalizedSo = salesOrderFormat.trim()
         val normalizedSt = stockAdjustmentFormat.trim()
@@ -400,6 +447,7 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
         const val USERS_COLLECTION = "Users"
         const val STOCK_ACCESS_RIGHTS_FIELD = "StockAccessRights"
         const val LOGIN_PASSWORD_FIELD = "LoginPassword"
+        const val CURRENT_API_URL_FIELD = "current_api_url"
         val COMPANY_SUBCOLLECTION_HINTS = listOf(
             "CreditorSummary",
             "DebtorSummary",
