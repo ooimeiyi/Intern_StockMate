@@ -73,8 +73,9 @@ import androidx.compose.ui.platform.LocalFocusManager
 @Composable
 fun StockListScreenContainer(
     navController: NavHostController,
+    stockViewModel: StockViewModel = viewModel(),
 ) {
-    val viewModel: StockViewModel = viewModel()
+    val viewModel = stockViewModel
     val state by viewModel.stockState.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val isInvalidSearch by viewModel.isInvalidSearch.collectAsState()
@@ -82,7 +83,6 @@ fun StockListScreenContainer(
     val stockLastUpdate by viewModel.stockLastUpdate.collectAsState()
     val syncStatusMessage by viewModel.syncStatusMessage.collectAsState()
     val isRemoteSyncing by viewModel.isRemoteSyncing.collectAsState()
-    val syncCooldownRemainingMs by viewModel.syncCooldownRemainingMs.collectAsState()
     val context = LocalContext.current
 
     val focusManager = LocalFocusManager.current
@@ -117,16 +117,6 @@ fun StockListScreenContainer(
             isInvalidSearch = isInvalidSearch,
             stockLastUpdate = stockLastUpdate,
             onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
-            onSyncClick = {
-                if (syncCooldownRemainingMs > 0L) {
-                    val remainingSeconds = (syncCooldownRemainingMs + 999L) / 1000L
-                    Toast.makeText(context, "Please wait ${remainingSeconds}s", Toast.LENGTH_SHORT).show()
-                } else {
-                    viewModel.syncStockListFromApi()
-                }
-            },
-            isSyncButtonEnabled = true,
-            syncButtonLabel = "Sync Latest Stock"
         )
 
         if (state is StockUiState.Error) {
@@ -177,10 +167,7 @@ fun StockListScreen(
     searchQuery: String,
     isInvalidSearch: Boolean,
     stockLastUpdate: String,
-    onSearchQueryChange: (String) -> Unit,
-    onSyncClick: () -> Unit,
-    isSyncButtonEnabled: Boolean,
-    syncButtonLabel: String
+    onSearchQueryChange: (String) -> Unit
 ) {
     val context = LocalContext.current
     var localQuery by remember { mutableStateOf(searchQuery) }
@@ -284,30 +271,6 @@ fun StockListScreen(
                         text = "Last Synced: ${if (stockLastUpdate.isBlank()) "-" else stockLastUpdate}",
                         color = Color(0xFF1A73E8),
                         fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Button(
-                    onClick = onSyncClick,
-                    enabled = isSyncButtonEnabled,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(44.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF3636))
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Sync,
-                        contentDescription = null,
-                        tint = Color.White
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = syncButtonLabel,
-                        color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
                 }

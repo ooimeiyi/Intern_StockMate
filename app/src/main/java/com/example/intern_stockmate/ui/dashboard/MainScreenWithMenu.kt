@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -196,6 +197,17 @@ fun MainScreenWithMenu(
                     }
                 },
                 actions = {
+                    if (currentRoute == HamburgerScreen.StockList.route) {
+                        IconButton(
+                            onClick = { stockViewModel.syncStockListFromApi() }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Sync,
+                                contentDescription = "Sync Latest Stock",
+                                tint = Color.White
+                            )
+                        }
+                    }
                     if (isDashboardRoute) {
                         IconButton(onClick = onLogout) {
                             Icon(
@@ -233,7 +245,10 @@ fun MainScreenWithMenu(
 
                 if (allowedScreens.contains(HamburgerScreen.StockList.route)) {
                     composable(HamburgerScreen.StockList.route) {
-                        StockListScreenContainer(navController = navController)
+                        StockListScreenContainer(
+                            navController = navController,
+                            stockViewModel = stockViewModel
+                        )
                     }
                 }
 
