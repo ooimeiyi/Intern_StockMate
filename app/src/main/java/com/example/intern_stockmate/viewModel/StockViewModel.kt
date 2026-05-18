@@ -34,6 +34,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.net.HttpURLConnection
 import java.net.URL
+import java.io.File
 
 class StockViewModel(
     application: Application
@@ -134,7 +135,7 @@ class StockViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             refreshApiUrlFromFirebase()
             val config = apiConfigDao.getConfig()
-            val cachedJson = config?.stockJson.orEmpty()
+            val cachedJson = loadCachedStockJson(config)
             if (cachedJson.isBlank()) {
                 clearStockData()
                 _stockState.value = StockUiState.Error("No local stock data. Please sync from API.")
@@ -180,10 +181,11 @@ class StockViewModel(
                     return@onSuccess
                 }
 
+                cacheStockJson(json)
                 apiConfigDao.upsertConfig(
                     config.copy(
                         apiUrl = apiUrl,
-                        stockJson = json,
+                        stockJson = "",
                         stockLastUpdate = effectiveLastUpdate
                     )
                 )
@@ -211,6 +213,29 @@ class StockViewModel(
                 }
             }
         }
+    }
+
+    private fun loadCachedStockJson(config: ApiConfigEntity?): String {
+        val fileJson = runCatching {
+            stockCacheFile().takeIf { it.exists() }?.readText().orEmpty()
+        }.getOrDefault("")
+
+        if (fileJson.isNotBlank()) return fileJson
+        return config?.stockJson.orEmpty()
+    }
+
+    private fun cacheStockJson(json: String) {
+        runCatching {
+            stockCacheFile().writeText(json)
+        }.onFailure { error ->
+            Log.e(TAG, "Failed to cache stock JSON to file", error)
+        }
+    }
+
+    private fun stockCacheFile(): File {
+        val companyId = CompanyContext.selectedCompanyId.value.trim().ifBlank { "default" }
+        val sanitized = companyId.replace(Regex("[^A-Za-z0-9._-]"), "_")
+        return File(getApplication<Application>().filesDir, "stock_cache_${sanitized}.json")
     }
 
     private suspend fun refreshApiUrlFromFirebase() {
