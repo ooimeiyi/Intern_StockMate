@@ -269,37 +269,64 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
 
         firestore.collection(COMPANIES_COLLECTION)
             .document(normalizedCompanyId)
+            .collection(SYSTEM_COLLECTION)
+            .document(API_CONFIG_DOCUMENT)
             .get()
-            .addOnSuccessListener { snapshot ->
-                val remoteApiUrl = listOf(
-                    snapshot.getString(CURRENT_API_URL_FIELD),
-                    snapshot.getString("currentApiUrl"),
-                    snapshot.getString("api_url"),
-                    snapshot.getString("apiUrl")
+            .addOnSuccessListener { apiConfigSnapshot ->
+                val apiConfigUrl = listOf(
+                    apiConfigSnapshot.getString(CURRENT_API_URL_FIELD),
+                    apiConfigSnapshot.getString("currentApiUrl"),
+                    apiConfigSnapshot.getString("api_url"),
+                    apiConfigSnapshot.getString("apiUrl")
                 )
                     .firstOrNull { !it.isNullOrBlank() }
                     ?.trim()
                     .orEmpty()
 
-                if (remoteApiUrl.isBlank()) {
+                if (apiConfigUrl.isNotBlank()) {
+                    saveResolvedApiUrl(apiConfigUrl)
                     return@addOnSuccessListener
                 }
 
-                var normalizedUrl = remoteApiUrl
-                if (!normalizedUrl.startsWith("http://") && !normalizedUrl.startsWith("https://")) {
-                    normalizedUrl = "http://$normalizedUrl"
-                }
+                firestore.collection(COMPANIES_COLLECTION)
+                    .document(normalizedCompanyId)
+                    .get()
+                    .addOnSuccessListener { snapshot ->
+                        val remoteApiUrl = listOf(
+                            snapshot.getString(SYSTEM_API_CONFIG_CURRENT_API_URL_FIELD),
+                            snapshot.getString(SYSTEM_API_CONFIG_CURRENT_API_URL_CAMEL_FIELD),
+                            snapshot.getString(CURRENT_API_URL_FIELD),
+                            snapshot.getString("currentApiUrl"),
+                            snapshot.getString("api_url"),
+                            snapshot.getString("apiUrl")
+                        )
+                            .firstOrNull { !it.isNullOrBlank() }
+                            ?.trim()
+                            .orEmpty()
 
-                if (_apiUrl.value == normalizedUrl) {
-                    return@addOnSuccessListener
-                }
-
-                _apiUrl.value = normalizedUrl
-                viewModelScope.launch(Dispatchers.IO) {
-                    val current = apiConfigDao.getConfig() ?: ApiConfigEntity()
-                    apiConfigDao.upsertConfig(current.copy(apiUrl = normalizedUrl))
-                }
+                        if (remoteApiUrl.isBlank()) {
+                            return@addOnSuccessListener
+                        }
+                        saveResolvedApiUrl(remoteApiUrl)
+                    }
             }
+    }
+
+    private fun saveResolvedApiUrl(rawApiUrl: String) {
+        var normalizedUrl = rawApiUrl
+        if (!normalizedUrl.startsWith("http://") && !normalizedUrl.startsWith("https://")) {
+            normalizedUrl = "http://$normalizedUrl"
+        }
+
+        if (_apiUrl.value == normalizedUrl) {
+            return
+        }
+
+        _apiUrl.value = normalizedUrl
+        viewModelScope.launch(Dispatchers.IO) {
+            val current = apiConfigDao.getConfig() ?: ApiConfigEntity()
+            apiConfigDao.upsertConfig(current.copy(apiUrl = normalizedUrl))
+        }
     }
 
     fun saveDocumentFormats(salesOrderFormat: String, stockAdjustmentFormat: String): Result<Unit> {
@@ -448,6 +475,10 @@ class ConfigurationViewModel(application: Application) : AndroidViewModel(applic
         const val STOCK_ACCESS_RIGHTS_FIELD = "StockAccessRights"
         const val LOGIN_PASSWORD_FIELD = "LoginPassword"
         const val CURRENT_API_URL_FIELD = "current_api_url"
+        const val SYSTEM_COLLECTION = "System"
+        const val API_CONFIG_DOCUMENT = "ApiConfig"
+        const val SYSTEM_API_CONFIG_CURRENT_API_URL_FIELD = "System.ApiConfig.current_api_url"
+        const val SYSTEM_API_CONFIG_CURRENT_API_URL_CAMEL_FIELD = "System.ApiConfig.currentApiUrl"
         val COMPANY_SUBCOLLECTION_HINTS = listOf(
             "CreditorSummary",
             "DebtorSummary",

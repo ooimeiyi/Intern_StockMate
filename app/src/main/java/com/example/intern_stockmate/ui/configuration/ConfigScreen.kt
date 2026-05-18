@@ -112,7 +112,11 @@ fun ConfigScreen(
     var showPermissionItems by remember { mutableStateOf(false) }
     val savedApiUrl by configurationViewModel.apiUrl.collectAsState()
     val syncStatusMessage by stockViewModel.syncStatusMessage.collectAsState()
-    var apiUrl by remember(savedApiUrl) { mutableStateOf(savedApiUrl) }
+    var apiUrl by remember { mutableStateOf(savedApiUrl) }
+
+    LaunchedEffect(savedApiUrl) {
+        apiUrl = savedApiUrl
+    }
     var scanning by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
